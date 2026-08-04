@@ -79,6 +79,18 @@ export interface Database {
           location: string | null;
           chapter_id: string | null;
           created_at: string;
+          interests: string[] | null;
+          referral_source: string | null;
+          co_lead_info: string | null;
+          over_18: boolean | null;
+          chapter_type: string | null;
+          chapter_location: string | null;
+          chapter_name: string | null;
+          advisor_name: string | null;
+          advisor_email: string | null;
+          partner_organization: string | null;
+          agreed_general_participation: boolean | null;
+          agreed_media_release: boolean | null;
         };
         Insert: {
           id: string;
@@ -91,6 +103,18 @@ export interface Database {
           location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
+          interests?: string[] | null;
+          referral_source?: string | null;
+          co_lead_info?: string | null;
+          over_18?: boolean | null;
+          chapter_type?: string | null;
+          chapter_location?: string | null;
+          chapter_name?: string | null;
+          advisor_name?: string | null;
+          advisor_email?: string | null;
+          partner_organization?: string | null;
+          agreed_general_participation?: boolean | null;
+          agreed_media_release?: boolean | null;
         };
         Update: {
           id?: string;
@@ -103,6 +127,18 @@ export interface Database {
           location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
+          interests?: string[] | null;
+          referral_source?: string | null;
+          co_lead_info?: string | null;
+          over_18?: boolean | null;
+          chapter_type?: string | null;
+          chapter_location?: string | null;
+          chapter_name?: string | null;
+          advisor_name?: string | null;
+          advisor_email?: string | null;
+          partner_organization?: string | null;
+          agreed_general_participation?: boolean | null;
+          agreed_media_release?: boolean | null;
         };
         Relationships: [
           {
@@ -442,6 +478,60 @@ export interface Database {
           contact_name?: string | null;
           contact_email?: string | null;
           notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // Project Hub submissions on the member-facing app (start-a-project
+      // wizard + wrap-up activity summary). See VolunteerPortalCFA's
+      // app/api/projects.
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          type: string;
+          scope: string;
+          deadline: string | null;
+          status: string;
+          prep: boolean;
+          impl: boolean;
+          wrapup: boolean;
+          data: Json | null;
+          chapter_id: string | null;
+          contributor_ids: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          type: string;
+          scope?: string;
+          deadline?: string | null;
+          status?: string;
+          prep?: boolean;
+          impl?: boolean;
+          wrapup?: boolean;
+          data?: Json | null;
+          chapter_id?: string | null;
+          contributor_ids?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          type?: string;
+          scope?: string;
+          deadline?: string | null;
+          status?: string;
+          prep?: boolean;
+          impl?: boolean;
+          wrapup?: boolean;
+          data?: Json | null;
+          chapter_id?: string | null;
+          contributor_ids?: string[];
           created_at?: string;
         };
         Relationships: [];
