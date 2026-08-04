@@ -19,7 +19,7 @@ export async function chapters(req: VercelRequest, res: VercelResponse, ctx: Req
   if (sub) { return byId(req, res, ctx, sub); }
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase.from('chapters').select('id, name, created_at').order('name');
+    const { data, error } = await supabase.from('chapters').select('id, name, created_at, status, meta').order('name');
     if (error) { throw error; }
     sendJson(res, 200, { data });
     return;
@@ -42,14 +42,14 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   const { supabase } = ctx;
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase.from('chapters').select('id, name, created_at').eq('id', id).single();
+    const { data, error } = await supabase.from('chapters').select('id, name, created_at, status, meta').eq('id', id).single();
     if (error) { throw error; }
     sendJson(res, 200, { data });
     return;
   }
 
   if (req.method === 'PATCH') {
-    const updates: { name?: string; project_count_override?: number | null } = {};
+    const updates: { name?: string; project_count_override?: number | null; status?: string } = {};
 
     if (req.body?.name !== undefined) {
       const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
@@ -66,7 +66,16 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
       updates.project_count_override = override;
     }
 
-    if (Object.keys(updates).length === 0) { badRequest(res, 'name or project_count_override is required'); return; }
+    if (req.body?.status !== undefined) {
+      const status = req.body.status;
+      if (status !== 'active' && status !== 'pending' && status !== 'rejected') {
+        badRequest(res, "status must be one of 'active', 'pending', 'rejected'");
+        return;
+      }
+      updates.status = status;
+    }
+
+    if (Object.keys(updates).length === 0) { badRequest(res, 'name, project_count_override, or status is required'); return; }
 
     const { data, error } = await supabase.from('chapters').update(updates).eq('id', id).select().single();
     if (error) { throw error; }

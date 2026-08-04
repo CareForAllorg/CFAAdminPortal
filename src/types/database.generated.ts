@@ -19,18 +19,24 @@ export interface Database {
           name: string;
           created_at: string;
           project_count_override: number | null;
+          status: string;
+          meta: Json | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
           project_count_override?: number | null;
+          status?: string;
+          meta?: Json | null;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
           project_count_override?: number | null;
+          status?: string;
+          meta?: Json | null;
         };
         Relationships: [];
       };
