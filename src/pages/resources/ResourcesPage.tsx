@@ -5,44 +5,13 @@ import { Button } from '../../components/Button';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { formatDate } from '../../utils/formatDate';
 import { useResources, type ResourceGroups } from './useResources';
+import { useMappingProjects, type MappingProject } from './useMappingProjects';
 import { ResourcePreviewModal } from './ResourcePreviewModal';
 import { ResourceEditModal } from './ResourceEditModal';
 import { AddResourceModal } from './AddResourceModal';
+import { MappingProjectEditModal } from './MappingProjectEditModal';
+import { MappingProjectTaskModal } from './MappingProjectTaskModal';
 import type { Resource } from '../../types/database';
-
-// The Mapping Project Directory section below is unrelated to Resources
-// (drives the member-facing Mapping page, not the resource library) --
-// still static mock, left untouched intentionally.
-
-interface MappingProject {
-  title: string;
-  desc: string;
-  location: string;
-  status: 'active' | 'paused' | 'completed';
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  stats: string;
-  featured: boolean;
-}
-
-const MAPPING_PROJECTS: MappingProject[] = [
-  { title: 'Arizona Disaster Response', desc: 'Map buildings and roads to support wildfire and flood disaster response across rural Arizona.', location: 'Arizona, USA · Disaster Response', status: 'active', difficulty: 'beginner', stats: '38 contributors · 1,240 mapped · 96 hr', featured: true },
-  { title: 'Bulawayo Healthcare Access', desc: 'Map clinics, hospitals, and access roads to improve healthcare routing in Bulawayo.', location: 'Bulawayo, Zimbabwe · Healthcare Access', status: 'active', difficulty: 'intermediate', stats: '22 contributors · 2,310 mapped · 142 hr', featured: true },
-  { title: 'Nairobi Building Footprints', desc: 'Trace building footprints in undermapped Nairobi neighborhoods for health-service planning.', location: 'Nairobi, Kenya · Buildings', status: 'active', difficulty: 'beginner', stats: '17 contributors · 880 mapped · 54 hr', featured: false },
-  { title: 'Rural Roads - Malawi', desc: 'Map rural road networks so mobile clinics can reach remote communities in Malawi.', location: 'Malawi · Roads', status: 'paused', difficulty: 'advanced', stats: '9 contributors · 430 mapped · 31 hr', featured: false },
-  { title: 'Coastal Flood Mapping 2025', desc: 'Completed 2025 effort mapping flood-prone coastal settlements in Bangladesh.', location: 'Bangladesh · Disaster Response', status: 'completed', difficulty: 'intermediate', stats: '54 contributors · 5,120 mapped · 310 hr', featured: false },
-];
-
-const STATUS_BADGE: Record<MappingProject['status'], string> = {
-  active: 'bg-success-light text-success-dark',
-  paused: 'bg-warning-light text-warning-dark',
-  completed: 'bg-border text-muted',
-};
-
-const DIFF_BADGE: Record<MappingProject['difficulty'], string> = {
-  beginner: 'bg-hover-tint text-brand',
-  intermediate: 'bg-intermediate-light text-accent',
-  advanced: 'bg-sidebar text-white',
-};
 
 function metaFor(item: Resource): string[] {
   const meta: string[] = [];
@@ -118,6 +87,19 @@ export function ResourcesPage() {
   const [deleteItem, setDeleteItem] = useState<Resource | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
+  const { projects, createProject, updateProject } = useMappingProjects();
+  const [taskItem, setTaskItem] = useState<MappingProject | null>(null);
+  const [projectEditItem, setProjectEditItem] = useState<MappingProject | null>(null);
+  const [projectAddOpen, setProjectAddOpen] = useState(false);
+
+  function handleUnfeature(project: MappingProject) {
+    updateProject(project.id, { featured: false });
+  }
+
+  function handleFeature(project: MappingProject) {
+    updateProject(project.id, { featured: true });
+  }
+
   function handleHide(item: Resource) {
     updateResource(item.id, { status: 'coming-soon' });
   }
@@ -172,37 +154,44 @@ export function ResourcesPage() {
           <div className="font-heading text-[16px] text-text tracking-[0.01em] flex items-center gap-[9px]">
             <i className="ti ti-map" /> Mapping Project Directory
           </div>
-          <Button variant="primary" className="!text-[12px] !px-4 !py-2">
+          <Button variant="primary" className="!text-[12px] !px-4 !py-2" onClick={() => setProjectAddOpen(true)}>
             <i className="ti ti-plus text-[12px] mr-1" />New Mapping Task
           </Button>
         </div>
-        <div className="text-[12.5px] text-muted mb-[18px]">These cards drive the member-facing Mapping page.</div>
+        <div className="text-[12.5px] text-muted mb-[18px]">These cards drive the member-facing Mapping page. Unfeatured tasks stay saved here but won't show to members.</div>
 
-        {MAPPING_PROJECTS.map((project) => (
-          <div key={project.title} className="bg-card border border-border rounded-xl px-5 py-[18px] mb-3 last:mb-0">
+        {projects.length === 0 ? (
+          <div className="text-[12.5px] text-muted">No mapping tasks yet.</div>
+        ) : projects.map((project) => (
+          <div key={project.id} className="bg-card border border-border rounded-xl px-5 py-[18px] mb-3 last:mb-0">
             <div className="flex items-start justify-between gap-[14px] mb-[9px]">
               <div>
-                <div className="text-[15px] font-bold text-text mb-1">{project.title}</div>
-                <div className="text-[12.5px] text-muted leading-[1.5] mb-[9px]">{project.desc}</div>
-                <div className="text-[12px] text-muted mb-[11px]">{project.location}</div>
+                <div className="text-[15px] font-bold text-text mb-1">{project.country}</div>
+                <div className="text-[12.5px] text-muted leading-[1.5] mb-[9px]">{project.description}</div>
+                <div className="text-[12px] text-muted mb-[11px]">{project.region}{project.types.length > 0 ? ` · ${project.types.join(', ')}` : ''}</div>
               </div>
               <div className="flex gap-[7px] shrink-0 flex-wrap justify-end">
-                <span className={`text-[10.5px] font-bold px-[10px] py-1 rounded-full uppercase tracking-[0.03em] ${STATUS_BADGE[project.status]}`}>
-                  {project.status}
-                </span>
-                <span className={`text-[10.5px] font-bold px-[10px] py-1 rounded-full uppercase tracking-[0.03em] ${DIFF_BADGE[project.difficulty]}`}>
-                  {project.difficulty}
-                </span>
+                {!project.featured && (
+                  <span className="text-[10.5px] font-bold px-[10px] py-1 rounded-full uppercase tracking-[0.03em] bg-bg text-muted border border-border">
+                    Unfeatured
+                  </span>
+                )}
+                {project.mapping_level && (
+                  <span className="text-[10.5px] font-bold px-[10px] py-1 rounded-full uppercase tracking-[0.03em] bg-hover-tint text-brand">
+                    {project.mapping_level}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="text-[12.5px] text-text font-semibold mb-[13px]">{project.stats}</div>
             <div className="flex items-center justify-between border-t border-border pt-3">
               <div className="flex items-center gap-[14px]">
-                <button className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Task</button>
-                <button className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
-                <button className={`text-[12.5px] font-bold bg-none border-none cursor-pointer font-sans hover:underline ${project.featured ? 'text-accent' : 'text-brand'}`}>
-                  {project.featured ? 'Unfeature' : 'Feature'}
-                </button>
+                <button onClick={() => setTaskItem(project)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Task</button>
+                <button onClick={() => setProjectEditItem(project)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
+                {project.featured ? (
+                  <button onClick={() => handleUnfeature(project)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Unfeature</button>
+                ) : (
+                  <button onClick={() => handleFeature(project)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Feature</button>
+                )}
               </div>
             </div>
           </div>
@@ -218,6 +207,20 @@ export function ResourcesPage() {
         text={`Are you sure you want to permanently delete "${deleteItem?.title ?? ''}"? This can't be undone.`}
         onCancel={() => setDeleteItem(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <MappingProjectTaskModal item={taskItem} onClose={() => setTaskItem(null)} />
+      <MappingProjectEditModal
+        open={projectEditItem !== null}
+        item={projectEditItem}
+        onClose={() => setProjectEditItem(null)}
+        onSave={(payload) => updateProject(projectEditItem!.id, payload)}
+      />
+      <MappingProjectEditModal
+        open={projectAddOpen}
+        item={null}
+        onClose={() => setProjectAddOpen(false)}
+        onSave={createProject}
       />
     </>
   );

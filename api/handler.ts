@@ -13,6 +13,7 @@ import { overview } from './_handlers/overview.js';
 import { leaderboard } from './_handlers/leaderboard.js';
 import { impact } from './_handlers/impact.js';
 import { approvals } from './_handlers/approvals.js';
+import { mappingProjects } from './_handlers/mappingProjects.js';
 
 // Single entry point for the entire API. Every file directly under /api
 // (one per resource/verb) counts as its own Vercel Serverless Function,
@@ -59,6 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'leaderboard': return await leaderboard(req, res, ctx, sub);
       case 'impact': return await impact(req, res, ctx, sub);
       case 'approvals': return await approvals(req, res, ctx, sub);
+      case 'mapping-projects': return await mappingProjects(req, res, ctx, sub);
       default:
         sendJson(res, 404, { error: `Unknown route: /${segments.join('/')}` });
     }
