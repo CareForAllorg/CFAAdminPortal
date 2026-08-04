@@ -5,12 +5,15 @@ import { StatCard } from '../../components/StatCard';
 import { SearchBar } from '../../components/SearchBar';
 import { Button } from '../../components/Button';
 import { useChapterData } from './useChapterData';
+import { useChapterApplications } from './useChapterApplications';
+import { ChapterApplications } from './ChapterApplications';
 import { CheckinDeadlinesForm } from './CheckinDeadlinesForm';
 import { ChapterComplianceTable } from './ChapterComplianceTable';
 import { ChapterDirectory } from './ChapterDirectory';
 
 export function ChaptersPage() {
   const { enriched, deadlines, currentYear, reload, markQuarterComplete, unmarkQuarterComplete, setProjectCountOverride } = useChapterData();
+  const { applications, loading: applicationsLoading, approve, reject } = useChapterApplications();
   const [search, setSearch] = useState('');
 
   const compliantCount = enriched.filter((c) => c.compliant).length;
@@ -24,6 +27,8 @@ export function ChaptersPage() {
         <StatCard label="Compliant" value={compliantCount} valueClassName="text-success" />
         <StatCard label="Non-Compliant" value={enriched.length - compliantCount} valueClassName="text-accent" />
       </div>
+
+      <ChapterApplications applications={applications} loading={applicationsLoading} onApprove={approve} onReject={reject} />
 
       <Card>
         <div className="text-[14px] font-bold text-text mb-4 flex items-center gap-2">
