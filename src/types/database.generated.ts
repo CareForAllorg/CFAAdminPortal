@@ -325,6 +325,50 @@ export interface Database {
         };
         Relationships: [];
       };
+      // Drives the Project Directory carousel on the member-facing app's
+      // Mapping page (see VolunteerPortalCFA's app/api/mapping/projects).
+      mapping_projects: {
+        Row: {
+          id: string;
+          region: string;
+          country: string;
+          types: string[];
+          url: string | null;
+          color: string;
+          description: string;
+          mapping_level: string | null;
+          featured: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          region: string;
+          country: string;
+          types?: string[];
+          url?: string | null;
+          color?: string;
+          description: string;
+          mapping_level?: string | null;
+          featured?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          region?: string;
+          country?: string;
+          types?: string[];
+          url?: string | null;
+          color?: string;
+          description?: string;
+          mapping_level?: string | null;
+          featured?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       mentors: {
         Row: {
           id: string;
