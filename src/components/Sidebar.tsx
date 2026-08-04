@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/impact', end: false, icon: 'chart-dots', label: 'Impact Measurables' },
   { to: '/mentorship', end: false, icon: 'school', label: 'Mentorship' },
   { to: '/resources', end: false, icon: 'books', label: 'Resources Manager' },
+  { to: '/partners', end: false, icon: 'handshake', label: 'Program Partners' },
 ];
 
 export function Sidebar() {

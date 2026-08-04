@@ -414,6 +414,38 @@ export interface Database {
         };
         Relationships: [];
       };
+      // No member-facing signup form for these -- staff add them by hand
+      // (see api/_handlers/partners.ts).
+      partners: {
+        Row: {
+          id: string;
+          name: string;
+          website: string | null;
+          contact_name: string | null;
+          contact_email: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          website?: string | null;
+          contact_name?: string | null;
+          contact_email?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          website?: string | null;
+          contact_name?: string | null;
+          contact_email?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       mentors: {
         Row: {
           id: string;

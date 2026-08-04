@@ -3,8 +3,9 @@ import { api, apiOrToast } from '../../lib/apiClient';
 import { useServiceLogsRealtime } from '../../lib/useServiceLogsRealtime';
 
 export interface ChapterLeaderboardRow {
+  id: string;
   name: string;
-  type: string;
+  type: 'Chapter' | 'Partner';
   hours: number;
 }
 

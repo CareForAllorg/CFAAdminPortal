@@ -14,15 +14,11 @@ interface IndividualRow {
 }
 
 interface ChapterRow {
+  id: string;
   name: string;
-  type: string;
+  type: 'Chapter' | 'Partner';
   hours: number;
 }
-
-// Partners aren't in the schema yet (no `partners` table) -- kept as a
-// static stand-in for the "Chapters & Partners" leaderboard until that
-// table exists.
-const STATIC_PARTNERS: ChapterRow[] = [{ name: 'Healara Inc.', type: 'Partner', hours: 210 }];
 
 export async function leaderboard(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
   if (req.method !== 'GET') {
@@ -82,25 +78,48 @@ async function individuals(res: VercelResponse, ctx: RequestContext) {
   sendJson(res, 200, { data: Object.values(totals).sort((a, b) => b.hours - a.hours) });
 }
 
+// Master list of every chapter and partner -- including ones with 0 hours
+// logged, per the requirements ("ALL CHAPTERS, and PARTNERS should be
+// displayed on the board even if they have 0 hours"). Previously only
+// chapters that happened to have approved service_logs showed up at all,
+// and partners were a single hardcoded fake row.
 async function chapters(res: VercelResponse, ctx: RequestContext) {
   const { supabase } = ctx;
 
-  const { data: logs, error } = await supabase
-    .from('service_logs')
-    .select('hours, user_id')
-    .eq('status', 'approved');
-  if (error) { throw error; }
+  const [chaptersRes, partnersRes, logsRes] = await Promise.all([
+    supabase.from('chapters').select('id, name'),
+    supabase.from('partners').select('id, name'),
+    supabase.from('service_logs').select('hours, user_id, org_name').eq('status', 'approved'),
+  ]);
+  if (chaptersRes.error) { throw chaptersRes.error; }
+  if (partnersRes.error) { throw partnersRes.error; }
+  if (logsRes.error) { throw logsRes.error; }
 
-  const rows = logs ?? [];
-  const profileById = await fetchProfilesByUserId(supabase, collectUserIds(rows));
+  const logs = logsRes.data ?? [];
+  const profileById = await fetchProfilesByUserId(supabase, collectUserIds(logs));
 
-  const totals: Record<string, number> = {};
-  rows.forEach((row) => {
-    const name = row.user_id ? profileById[row.user_id]?.chapters?.name : undefined;
-    if (!name) { return; }
-    totals[name] = (totals[name] || 0) + (Number(row.hours) || 0);
+  const hoursByChapterName: Record<string, number> = {};
+  const hoursByOrgNameLower: Record<string, number> = {};
+  logs.forEach((row) => {
+    const hours = Number(row.hours) || 0;
+    const chapterName = row.user_id ? profileById[row.user_id]?.chapters?.name : undefined;
+    if (chapterName) { hoursByChapterName[chapterName] = (hoursByChapterName[chapterName] || 0) + hours; }
+
+    // Partners have no FK on service_logs -- org_name is free text a
+    // member types in, matched against a partner's name case-insensitively
+    // as the closest real signal available, rather than always showing 0.
+    if (row.org_name) {
+      const key = row.org_name.trim().toLowerCase();
+      hoursByOrgNameLower[key] = (hoursByOrgNameLower[key] || 0) + hours;
+    }
   });
 
-  const chapterRows: ChapterRow[] = Object.keys(totals).map((name) => ({ name, type: 'Chapter', hours: totals[name] }));
-  sendJson(res, 200, { data: chapterRows.concat(STATIC_PARTNERS).sort((a, b) => b.hours - a.hours) });
+  const chapterRows: ChapterRow[] = (chaptersRes.data ?? []).map((c) => ({
+    id: c.id, name: c.name, type: 'Chapter', hours: hoursByChapterName[c.name] || 0,
+  }));
+  const partnerRows: ChapterRow[] = (partnersRes.data ?? []).map((p) => ({
+    id: p.id, name: p.name, type: 'Partner', hours: hoursByOrgNameLower[p.name.trim().toLowerCase()] || 0,
+  }));
+
+  sendJson(res, 200, { data: chapterRows.concat(partnerRows).sort((a, b) => b.hours - a.hours) });
 }

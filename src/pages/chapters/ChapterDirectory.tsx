@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { formatDate } from '../../utils/formatDate';
+import { ChapterProfileModal } from '../../components/ChapterProfileModal';
 import type { EnrichedChapter } from './useChapterData';
 
 interface ChapterDirectoryProps {
@@ -7,6 +9,7 @@ interface ChapterDirectoryProps {
 }
 
 export function ChapterDirectory({ chapters, searchQuery }: ChapterDirectoryProps) {
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const sorted = [...chapters].sort((a, b) => a.name.localeCompare(b.name));
   const query = searchQuery.trim().toLowerCase();
   const visible = sorted.filter((ch) => ch.name.toLowerCase().includes(query));
@@ -24,8 +27,12 @@ export function ChapterDirectory({ chapters, searchQuery }: ChapterDirectoryProp
 
       <div>
         {visible.map((ch) => (
-          <div key={ch.id} className="grid grid-cols-[1.7fr_1fr_0.9fr_0.7fr_1.6fr_1.2fr] gap-3 items-center py-[14px] border-b border-border last:border-b-0">
-            <div className="text-[13px] font-semibold text-text">{ch.name}</div>
+          <div
+            key={ch.id}
+            onClick={() => setSelectedChapterId(ch.id)}
+            className="grid grid-cols-[1.7fr_1fr_0.9fr_0.7fr_1.6fr_1.2fr] gap-3 items-center py-[14px] border-b border-border last:border-b-0 cursor-pointer transition-colors duration-150 hover:bg-bg"
+          >
+            <div className="text-[13px] font-semibold text-text hover:underline">{ch.name}</div>
             <div className="text-[11.5px] text-muted">—</div>
             <div className="text-[11.5px] text-muted">{ch.lead}</div>
             <div className="text-[11.5px] text-muted">{ch.memberCount}</div>
@@ -38,6 +45,8 @@ export function ChapterDirectory({ chapters, searchQuery }: ChapterDirectoryProp
       {visible.length === 0 ? (
         <div className="text-center py-5 text-muted text-[13px]">No matches found.</div>
       ) : null}
+
+      <ChapterProfileModal chapterId={selectedChapterId} onClose={() => setSelectedChapterId(null)} />
     </>
   );
 }
