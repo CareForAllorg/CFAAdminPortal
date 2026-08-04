@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/mentorship', end: false, icon: 'school', label: 'Mentorship' },
   { to: '/resources', end: false, icon: 'books', label: 'Resources Manager' },
   { to: '/partners', end: false, icon: 'handshake', label: 'Program Partners' },
+  { to: '/form-submissions', end: false, icon: 'forms', label: 'Form Submissions' },
 ];
 
 export function Sidebar() {
