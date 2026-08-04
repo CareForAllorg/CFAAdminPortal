@@ -13,7 +13,7 @@ const LOG_COLUMNS = `
   id, user_id, name, org_name, activity_type, hours, status, description,
   submitted_at, reviewed_at, reviewed_by, verify_method, verification_completed,
   verification_completed_at, primary_impact, impact_magnitude, secondary_impact,
-  secondary_impact_magnitude
+  secondary_impact_magnitude, proof_path
 `;
 
 // Handles /api/service-logs (list/create) and /api/service-logs/:id

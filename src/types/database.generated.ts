@@ -196,6 +196,7 @@ export interface Database {
           impact_magnitude: number | null;
           secondary_impact: string | null;
           secondary_impact_magnitude: number | null;
+          proof_path: string | null;
         };
         Insert: {
           id?: string;
@@ -218,6 +219,7 @@ export interface Database {
           impact_magnitude?: number | null;
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
+          proof_path?: string | null;
         };
         Update: {
           id?: string;
@@ -240,6 +242,7 @@ export interface Database {
           impact_magnitude?: number | null;
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
+          proof_path?: string | null;
         };
         Relationships: [
           {
@@ -365,6 +368,48 @@ export interface Database {
           mapping_level?: string | null;
           featured?: boolean;
           sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // A chapter lead's "I hosted this event" record -- see
+      // VolunteerPortalCFA's POST /api/mapping/mapathon-reports. Distinct
+      // from mapathon time-log service_logs rows.
+      mapathon_reports: {
+        Row: {
+          id: string;
+          user_id: string;
+          chapter_id: string | null;
+          event_date: string;
+          setting: string;
+          participants: number;
+          tasks_completed: number;
+          notes: string | null;
+          proof_path: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          chapter_id?: string | null;
+          event_date: string;
+          setting: string;
+          participants?: number;
+          tasks_completed?: number;
+          notes?: string | null;
+          proof_path?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          chapter_id?: string | null;
+          event_date?: string;
+          setting?: string;
+          participants?: number;
+          tasks_completed?: number;
+          notes?: string | null;
+          proof_path?: string | null;
           created_at?: string;
         };
         Relationships: [];
