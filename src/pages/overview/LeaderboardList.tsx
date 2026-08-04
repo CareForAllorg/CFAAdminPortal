@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '../../components/Button';
-import { MemberProfileModal } from '../../components/MemberProfileModal';
 
 const PREVIEW_SIZE = 6;
 
@@ -17,11 +16,15 @@ interface LeaderboardListProps {
   nameColumnLabel: string;
   metaColumnLabel: string;
   visible: boolean;
+  onRowClick?: (id: string) => void;
 }
 
-export function LeaderboardList({ rows, searchQuery, nameColumnLabel, metaColumnLabel, visible }: LeaderboardListProps) {
+// Row-click behavior (opening a profile modal) is owned by the caller now
+// -- individuals open a MemberProfileModal, chapters/partners open a
+// Chapter or Partner one depending on row.meta, and this component doesn't
+// need to know which.
+export function LeaderboardList({ rows, searchQuery, nameColumnLabel, metaColumnLabel, visible, onRowClick }: LeaderboardListProps) {
   const [expanded, setExpanded] = useState(false);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   const query = searchQuery.trim().toLowerCase();
   const matching = rows.filter((r) => r.name.toLowerCase().includes(query));
@@ -40,11 +43,11 @@ export function LeaderboardList({ rows, searchQuery, nameColumnLabel, metaColumn
       <div>
         {shown.map((row, idx) => {
           const rank = idx + 1;
-          const clickable = Boolean(row.id);
+          const clickable = Boolean(row.id && onRowClick);
           return (
             <div
               key={row.name}
-              onClick={clickable ? () => setSelectedProfileId(row.id as string) : undefined}
+              onClick={clickable ? () => onRowClick!(row.id as string) : undefined}
               className={`grid grid-cols-[36px_2fr_1fr_1fr] gap-3 items-center py-[11px] border-b border-border last:border-b-0 rounded-lg transition-colors duration-150 hover:bg-bg ${clickable ? 'cursor-pointer' : ''}`}
             >
               <div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[12px] font-bold text-white ${rankBadgeClass(rank)}`}>
@@ -70,8 +73,6 @@ export function LeaderboardList({ rows, searchQuery, nameColumnLabel, metaColumn
       >
         {expanded ? `Show Top ${PREVIEW_SIZE}` : 'View Full Leaderboard'}
       </Button>
-
-      <MemberProfileModal profileId={selectedProfileId} onClose={() => setSelectedProfileId(null)} />
     </div>
   );
 }

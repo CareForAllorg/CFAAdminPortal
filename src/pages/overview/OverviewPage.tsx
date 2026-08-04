@@ -4,6 +4,9 @@ import { Card } from '../../components/Card';
 import { StatCard } from '../../components/StatCard';
 import { SegmentedToggle } from '../../components/SegmentedToggle';
 import { SearchBar } from '../../components/SearchBar';
+import { MemberProfileModal } from '../../components/MemberProfileModal';
+import { ChapterProfileModal } from '../../components/ChapterProfileModal';
+import { PartnerProfileModal } from '../../components/PartnerProfileModal';
 import { useOverviewStats } from './useOverviewStats';
 import { HoursChart } from './HoursChart';
 import { HoursPieChart } from './HoursPieChart';
@@ -17,6 +20,15 @@ export function OverviewPage() {
   const { ranked: chapters } = useChapterLeaderboard();
   const [leaderboardView, setLeaderboardView] = useState<'individuals' | 'groups'>('individuals');
   const [search, setSearch] = useState('');
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+
+  function handleGroupRowClick(id: string) {
+    const row = chapters.find((c) => c.id === id);
+    if (!row) { return; }
+    if (row.type === 'Partner') { setSelectedPartnerId(id); } else { setSelectedChapterId(id); }
+  }
 
   return (
     <>
@@ -61,15 +73,21 @@ export function OverviewPage() {
           nameColumnLabel="Member"
           metaColumnLabel="Chapter"
           visible={leaderboardView === 'individuals'}
+          onRowClick={setSelectedMemberId}
         />
         <LeaderboardList
-          rows={chapters.map((r) => ({ name: r.name, meta: r.type, hours: r.hours }))}
+          rows={chapters.map((r) => ({ name: r.name, meta: r.type, hours: r.hours, id: r.id }))}
           searchQuery={search}
           nameColumnLabel="Chapter / Partner"
           metaColumnLabel="Type"
           visible={leaderboardView === 'groups'}
+          onRowClick={handleGroupRowClick}
         />
       </Card>
+
+      <MemberProfileModal profileId={selectedMemberId} onClose={() => setSelectedMemberId(null)} />
+      <ChapterProfileModal chapterId={selectedChapterId} onClose={() => setSelectedChapterId(null)} />
+      <PartnerProfileModal partnerId={selectedPartnerId} onClose={() => setSelectedPartnerId(null)} />
     </>
   );
 }

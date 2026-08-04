@@ -8,6 +8,7 @@ import { MembersPage } from '../pages/members/MembersPage';
 import { ImpactPage } from '../pages/impact/ImpactPage';
 import { MentorshipPage } from '../pages/mentorship/MentorshipPage';
 import { ResourcesPage } from '../pages/resources/ResourcesPage';
+import { PartnersPage } from '../pages/partners/PartnersPage';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'impact', element: <ImpactPage /> },
       { path: 'mentorship', element: <MentorshipPage /> },
       { path: 'resources', element: <ResourcesPage /> },
+      { path: 'partners', element: <PartnersPage /> },
     ],
   },
 ]);
