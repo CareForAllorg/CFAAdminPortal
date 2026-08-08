@@ -121,9 +121,10 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
       <div className="text-[14px] font-bold text-text mt-6 mb-4 flex items-center gap-2">
         <i className="ti ti-map-2 text-muted text-[17px]" /> Mapathon Submissions
       </div>
-      <div className="grid grid-cols-[1.4fr_0.9fr_1fr_0.8fr_1.1fr] gap-[10px] items-center py-3 border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
+      <div className="grid grid-cols-[1.4fr_0.9fr_0.9fr_1fr_0.8fr_1.1fr] gap-[10px] items-center py-3 border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
         <div>Member</div>
-        <div>Tasks Completed</div>
+        <div>Buildings</div>
+        <div>Roads (km)</div>
         <div>Date</div>
         <div>Hours</div>
         <div>Action</div>
@@ -133,7 +134,7 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
         <div className="text-center py-6 text-muted text-[13px]">No pending mapathon submissions.</div>
       ) : (
         mapathonSubmissions.map((row) => (
-          <div key={row.id} className="grid grid-cols-[1.4fr_0.9fr_1fr_0.8fr_1.1fr] gap-[10px] items-center py-3 border-b border-border last:border-b-0">
+          <div key={row.id} className="grid grid-cols-[1.4fr_0.9fr_0.9fr_1fr_0.8fr_1.1fr] gap-[10px] items-center py-3 border-b border-border last:border-b-0">
             <div
               onClick={row.user_id ? () => setSelectedProfileId(row.user_id) : undefined}
               className={row.user_id ? 'cursor-pointer' : ''}
@@ -141,7 +142,8 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
               <div className={`text-[13px] font-semibold text-text ${row.user_id ? 'hover:underline' : ''}`}>{row.displayName}</div>
               <div className="text-[11.5px] text-muted">{row.displayChapter}</div>
             </div>
-            <div className="text-[11.5px] text-muted">{row.tasksCompleted != null ? row.tasksCompleted : '-'}</div>
+            <div className="text-[11.5px] text-muted">{row.buildings != null ? `${row.buildings} buildings` : '-'}</div>
+            <div className="text-[11.5px] text-muted">{row.roadsKm != null ? `${row.roadsKm} km` : '-'}</div>
             <div className="text-[11.5px] text-muted">{formatDate(row.submitted_at, '')}</div>
             <div className="font-semibold">{formatHours(row.hours)}</div>
             <div className="flex gap-[6px]">
@@ -161,8 +163,12 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
         {previewMapathonRow ? (
           <>
             <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
-              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Tasks Completed</div>
-              <div className="text-[14px] text-text font-semibold">{previewMapathonRow.tasksCompleted != null ? previewMapathonRow.tasksCompleted : '-'}</div>
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Buildings</div>
+              <div className="text-[14px] text-text font-semibold">{previewMapathonRow.buildings != null ? `${previewMapathonRow.buildings} buildings` : '-'}</div>
+            </div>
+            <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Roads</div>
+              <div className="text-[14px] text-text font-semibold">{previewMapathonRow.roadsKm != null ? `${previewMapathonRow.roadsKm} km` : '-'}</div>
             </div>
             <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Hours</div>
@@ -198,19 +204,23 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
         <div className="text-center py-6 text-muted text-[13px]">No mapathons hosted yet.</div>
       ) : (
         <>
-          <div className="grid grid-cols-[1.2fr_1.2fr_1fr_0.9fr_0.9fr] gap-[10px] items-center py-3 border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
+          <div className="grid grid-cols-[1.1fr_1.1fr_0.9fr_0.8fr_0.8fr_0.8fr_0.8fr] gap-[10px] items-center py-3 border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
             <div>Host</div>
             <div>Chapter</div>
             <div>Date</div>
             <div>Participants</div>
+            <div>Buildings</div>
+            <div>Roads (km)</div>
             <div>Proof</div>
           </div>
           {reports.map((r) => (
-            <div key={r.id} className="grid grid-cols-[1.2fr_1.2fr_1fr_0.9fr_0.9fr] gap-[10px] items-center py-3 border-b border-border last:border-b-0">
+            <div key={r.id} className="grid grid-cols-[1.1fr_1.1fr_0.9fr_0.8fr_0.8fr_0.8fr_0.8fr] gap-[10px] items-center py-3 border-b border-border last:border-b-0">
               <div className="text-[13px] font-semibold text-text">{r.hostName}</div>
               <div className="text-[11.5px] text-muted">{r.chapterName}</div>
               <div className="text-[11.5px] text-muted">{formatDate(r.eventDate, '')}</div>
               <div className="text-[11.5px] text-muted">{r.participants}</div>
+              <div className="text-[11.5px] text-muted">{r.buildingsMapped ?? '-'}</div>
+              <div className="text-[11.5px] text-muted">{r.kmRoadsMapped ?? '-'}</div>
               <div><ProofLink path={r.proofPath} /></div>
             </div>
           ))}

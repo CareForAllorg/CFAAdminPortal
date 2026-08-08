@@ -426,6 +426,8 @@ export interface Database {
           setting: string;
           participants: number;
           tasks_completed: number;
+          buildings_mapped: number | null;
+          km_roads_mapped: number | null;
           notes: string | null;
           proof_path: string | null;
           created_at: string;
@@ -438,6 +440,8 @@ export interface Database {
           setting: string;
           participants?: number;
           tasks_completed?: number;
+          buildings_mapped?: number | null;
+          km_roads_mapped?: number | null;
           notes?: string | null;
           proof_path?: string | null;
           created_at?: string;
@@ -450,6 +454,8 @@ export interface Database {
           setting?: string;
           participants?: number;
           tasks_completed?: number;
+          buildings_mapped?: number | null;
+          km_roads_mapped?: number | null;
           notes?: string | null;
           proof_path?: string | null;
           created_at?: string;
@@ -484,6 +490,33 @@ export interface Database {
           contact_name?: string | null;
           contact_email?: string | null;
           notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // Admin-configured mapathon dates + hours -- VolunteerPortalCFA's
+      // Mapathon Time Log form reads this to populate a "when was the
+      // mapathon" dropdown instead of a free-typed hours field.
+      mapathon_dates: {
+        Row: {
+          id: string;
+          event_date: string;
+          hours: number;
+          label: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_date: string;
+          hours: number;
+          label?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_date?: string;
+          hours?: number;
+          label?: string | null;
           created_at?: string;
         };
         Relationships: [];

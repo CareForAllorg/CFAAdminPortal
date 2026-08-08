@@ -12,7 +12,8 @@ export interface MapathonSubmissionRow {
   description: string | null;
   displayName: string;
   displayChapter: string;
-  tasksCompleted: number | null;
+  buildings: number | null;
+  roadsKm: number | null;
   proofPath: string | null;
 }
 
@@ -25,9 +26,25 @@ interface ServiceLogApiRow {
   hours: number;
   submitted_at: string;
   description: string | null;
+  primary_impact: string | null;
   impact_magnitude: number | null;
+  secondary_impact: string | null;
+  secondary_impact_magnitude: number | null;
   proof_path: string | null;
   profiles: EmbeddedProfile | null;
+}
+
+function extractMapathonMetrics(row: ServiceLogApiRow): { buildings: number | null; roadsKm: number | null } {
+  let buildings: number | null = null;
+  let roadsKm: number | null = null;
+
+  if (row.primary_impact === 'Buildings Mapped') { buildings = row.impact_magnitude; }
+  else if (row.secondary_impact === 'Buildings Mapped') { buildings = row.secondary_impact_magnitude; }
+
+  if (row.primary_impact === 'Roads Mapped') { roadsKm = row.impact_magnitude; }
+  else if (row.secondary_impact === 'Roads Mapped') { roadsKm = row.secondary_impact_magnitude; }
+
+  return { buildings, roadsKm };
 }
 
 export const MAPATHON_SUBMISSIONS_PAGE_SIZE = 20;
@@ -53,6 +70,7 @@ export function useMapathonSubmissions(onMutated: () => void) {
 
     setAllRows(result.data.map((row) => {
       const display = resolveDisplay(row);
+      const { buildings, roadsKm } = extractMapathonMetrics(row);
       return {
         id: row.id,
         user_id: row.user_id,
@@ -62,7 +80,8 @@ export function useMapathonSubmissions(onMutated: () => void) {
         description: row.description,
         displayName: display.name,
         displayChapter: display.chapter,
-        tasksCompleted: row.impact_magnitude,
+        buildings,
+        roadsKm,
         proofPath: row.proof_path,
       };
     }));

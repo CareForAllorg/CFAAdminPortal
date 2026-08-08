@@ -8,7 +8,8 @@ export interface MapathonReportRow {
   eventDate: string;
   setting: string;
   participants: number;
-  tasksCompleted: number;
+  buildingsMapped: number | null;
+  kmRoadsMapped: number | null;
   notes: string | null;
   proofPath: string | null;
   createdAt: string;

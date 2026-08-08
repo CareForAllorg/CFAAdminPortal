@@ -19,7 +19,7 @@ export async function mapathonReports(req: VercelRequest, res: VercelResponse, c
 
   const { data: reports, error } = await supabase
     .from('mapathon_reports')
-    .select('id, user_id, chapter_id, event_date, setting, participants, tasks_completed, notes, proof_path, created_at')
+    .select('id, user_id, chapter_id, event_date, setting, participants, buildings_mapped, km_roads_mapped, notes, proof_path, created_at')
     .order('event_date', { ascending: false });
   if (error) { throw error; }
 
@@ -42,7 +42,8 @@ export async function mapathonReports(req: VercelRequest, res: VercelResponse, c
       eventDate: r.event_date,
       setting: r.setting,
       participants: r.participants,
-      tasksCompleted: r.tasks_completed,
+      buildingsMapped: r.buildings_mapped,
+      kmRoadsMapped: r.km_roads_mapped,
       notes: r.notes,
       proofPath: r.proof_path,
       createdAt: r.created_at,
