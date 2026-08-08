@@ -91,6 +91,8 @@ export interface Database {
           partner_organization: string | null;
           agreed_general_participation: boolean | null;
           agreed_media_release: boolean | null;
+          buildings_mapped: number;
+          km_roads_mapped: number;
         };
         Insert: {
           id: string;
@@ -115,6 +117,8 @@ export interface Database {
           partner_organization?: string | null;
           agreed_general_participation?: boolean | null;
           agreed_media_release?: boolean | null;
+          buildings_mapped?: number;
+          km_roads_mapped?: number;
         };
         Update: {
           id?: string;
@@ -139,6 +143,8 @@ export interface Database {
           partner_organization?: string | null;
           agreed_general_participation?: boolean | null;
           agreed_media_release?: boolean | null;
+          buildings_mapped?: number;
+          km_roads_mapped?: number;
         };
         Relationships: [
           {

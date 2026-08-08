@@ -144,6 +144,22 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
 
     const { data, error } = await supabase.from('service_logs').update(updates).eq('id', id).select(LOG_COLUMNS).single();
     if (error) { throw error; }
+
+    // Mapping submissions carry the member's new cumulative totals, not a
+    // delta -- approving one must REPLACE profiles.buildings_mapped/
+    // km_roads_mapped, never add to them, per the member-facing form's
+    // "must replace the last reported totals" requirement.
+    if (updates.status === 'approved' && data.user_id && data.primary_impact === 'Buildings Mapped') {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          buildings_mapped: data.impact_magnitude ?? 0,
+          km_roads_mapped: data.secondary_impact_magnitude ?? 0,
+        })
+        .eq('id', data.user_id);
+      if (profileError) { throw profileError; }
+    }
+
     const [withProfile] = await attachProfiles(supabase, [data]);
     sendJson(res, 200, { data: withProfile });
     return;
