@@ -3,7 +3,7 @@ import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import type { Database } from '../../src/types/database.generated.js';
 
-const MENTOR_COLUMNS = 'id, name, calendly_link, available';
+const MENTOR_COLUMNS = 'id, name, calendly_link, available, profile_id';
 
 type MentorUpdate = Database['public']['Tables']['mentors']['Update'];
 
@@ -21,15 +21,32 @@ export async function mentors(req: VercelRequest, res: VercelResponse, ctx: Requ
   }
 
   if (req.method === 'POST') {
-    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
-    if (!name) { badRequest(res, 'name is required'); return; }
+    const profileId = typeof req.body?.profile_id === 'string' ? req.body.profile_id.trim() : '';
+    if (!profileId) { badRequest(res, 'profile_id is required'); return; }
+
+    // Mentor rows must resolve to a real profile -- the whole point of this
+    // table is a live link, not a free-typed name that can drift out of
+    // sync with the member's actual profile.
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, role')
+      .eq('id', profileId)
+      .maybeSingle();
+    if (profileError) { throw profileError; }
+    if (!profile) { badRequest(res, 'No profile found for that profile_id'); return; }
+    if (profile.role !== 'mentor') { badRequest(res, 'Selected profile is not a mentor'); return; }
+
+    const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
 
     const { data, error } = await supabase
       .from('mentors')
-      .insert({ name, calendly_link: req.body.calendly_link ?? null, available: req.body.available ?? false })
+      .insert({ profile_id: profileId, name, calendly_link: req.body.calendly_link ?? null, available: req.body.available ?? false })
       .select(MENTOR_COLUMNS)
       .single();
-    if (error) { throw error; }
+    if (error) {
+      if (error.code === '23505') { badRequest(res, 'This mentor already has a booking-availability entry'); return; }
+      throw error;
+    }
     sendJson(res, 201, { data });
     return;
   }
@@ -47,7 +64,6 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
       updates.available = req.body.available;
     }
     if (req.body && 'calendly_link' in req.body) { updates.calendly_link = req.body.calendly_link; }
-    if (req.body && 'name' in req.body) { updates.name = req.body.name; }
 
     if (Object.keys(updates).length === 0) { badRequest(res, 'No updatable fields provided'); return; }
 

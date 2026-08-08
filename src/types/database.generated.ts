@@ -581,18 +581,21 @@ export interface Database {
           name: string;
           calendly_link: string | null;
           available: boolean;
+          profile_id: string;
         };
         Insert: {
           id?: string;
           name: string;
           calendly_link?: string | null;
           available?: boolean;
+          profile_id: string;
         };
         Update: {
           id?: string;
           name?: string;
           calendly_link?: string | null;
           available?: boolean;
+          profile_id?: string;
         };
         Relationships: [];
       };
