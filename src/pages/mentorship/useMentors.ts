@@ -8,8 +8,13 @@ export interface MentorProfileOption {
   last_name: string | null;
 }
 
+// avatar_url lives on profiles, not this table (see attachAvatars in
+// api/_handlers/mentors.ts), so every /mentors response has it attached
+// as an extra field rather than it being a real mentors-table column.
+export type MentorWithAvatar = Mentor & { avatar_url: string | null };
+
 interface MentorshipState {
-  mentors: Mentor[];
+  mentors: MentorWithAvatar[];
   sessionCount: number | null;
   loading: boolean;
 }
@@ -20,7 +25,7 @@ export function useMentors() {
 
   const load = useCallback(async () => {
     const [mentorsResult, sessionsResult, profilesResult] = await Promise.all([
-      apiOrToast(api.get<{ data: Mentor[] }>('/mentors'), 'Loading mentors', { data: [] }),
+      apiOrToast(api.get<{ data: MentorWithAvatar[] }>('/mentors'), 'Loading mentors', { data: [] }),
       apiOrToast(api.get<{ total: number }>('/mentorship-sessions'), 'Loading session count', { total: 0 }),
       // Every mentor-role profile, so "Add Mentor" can offer the ones that
       // don't have a booking-availability row yet -- not free-typed.
@@ -71,6 +76,42 @@ export function useMentors() {
     return true;
   }
 
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadMentorAvatar(mentorId: string, profileId: string, file: File): Promise<string | null> {
+    const dataUrl = await readFileAsDataUrl(file);
+    const result = await apiOrToast<{ url: string } | null>(
+      api.post<{ url: string }>('/uploads/mentor-avatar', { profileId, dataUrl }),
+      'Uploading photo',
+      null
+    );
+    if (!result) { return null; }
+
+    setState((prev) => ({
+      ...prev,
+      mentors: prev.mentors.map((m) => (m.id === mentorId ? { ...m, avatar_url: result.url } : m)),
+    }));
+    return result.url;
+  }
+
+  async function removeMentorAvatar(mentorId: string, profileId: string): Promise<boolean> {
+    const ok = await mutateOrToast(api.patch(`/profiles/${profileId}`, { avatar_url: null }), 'Removing photo');
+    if (!ok) { return false; }
+
+    setState((prev) => ({
+      ...prev,
+      mentors: prev.mentors.map((m) => (m.id === mentorId ? { ...m, avatar_url: null } : m)),
+    }));
+    return true;
+  }
+
   async function addMentor(profileId: string) {
     const ok = await mutateOrToast(api.post('/mentors', { profile_id: profileId, available: false }), 'Adding mentor');
     if (ok) { await load(); }
@@ -81,5 +122,5 @@ export function useMentors() {
     (p) => !state.mentors.some((m) => m.profile_id === p.id),
   );
 
-  return { ...state, unlistedMentorProfiles, setMentorAvailability, updateMentor, addMentor };
+  return { ...state, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor };
 }

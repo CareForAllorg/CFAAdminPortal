@@ -15,7 +15,7 @@ import { impact } from './_handlers/impact.js';
 import { approvals } from './_handlers/approvals.js';
 import { mappingProjects } from './_handlers/mappingProjects.js';
 import { mapathonReports } from './_handlers/mapathonReports.js';
-import { uploadsSignedUrl } from './_handlers/uploads.js';
+import { uploadsSignedUrl, uploadMentorAvatar } from './_handlers/uploads.js';
 import { partners } from './_handlers/partners.js';
 import { formSubmissions } from './_handlers/formSubmissions.js';
 import { mapathonDates } from './_handlers/mapathonDates.js';
@@ -72,6 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'mapathon-dates': return await mapathonDates(req, res, ctx, sub);
       case 'uploads':
         if (sub === 'signed-url') { return await uploadsSignedUrl(req, res, ctx); }
+        if (sub === 'mentor-avatar') { return await uploadMentorAvatar(req, res, ctx); }
         sendJson(res, 404, { error: `Unknown route: /${segments.join('/')}` });
         return;
       default:

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Mentor } from '../../types/database';
+import type { MentorWithAvatar } from './useMentors';
 import { StatusPill } from '../../components/StatusPill';
 import { ConfirmModal } from '../../components/ConfirmModal';
 
@@ -19,19 +19,19 @@ function initialsFor(name: string | null): string {
 }
 
 interface MentorAvailabilityListProps {
-  mentors: Mentor[];
+  mentors: MentorWithAvatar[];
   searchQuery: string;
   onSetAvailability: (mentorId: string, available: boolean) => void;
-  onEdit: (mentor: Mentor) => void;
+  onEdit: (mentor: MentorWithAvatar) => void;
 }
 
 export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability, onEdit }: MentorAvailabilityListProps) {
-  const [confirmMentor, setConfirmMentor] = useState<Mentor | null>(null);
+  const [confirmMentor, setConfirmMentor] = useState<MentorWithAvatar | null>(null);
 
   const query = searchQuery.trim().toLowerCase();
   const visible = mentors.filter((m) => (m.name || '').toLowerCase().includes(query));
 
-  function handleToggleClick(mentor: Mentor) {
+  function handleToggleClick(mentor: MentorWithAvatar) {
     if (mentor.available) {
       // Turning OFF requires confirmation, same as the original design.
       setConfirmMentor(mentor);
@@ -57,12 +57,20 @@ export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability
           return (
             <div key={mentor.id} className="grid grid-cols-[2.4fr_1fr_1fr_1.2fr] gap-[14px] items-center py-[14px] border-b border-border last:border-b-0">
               <div className="flex items-center gap-3">
-                <div
-                  className="w-[38px] h-[38px] rounded-full flex items-center justify-center font-semibold text-[13px] text-white shrink-0"
-                  style={{ background: colorFor(i) }}
-                >
-                  {initialsFor(mentor.name)}
-                </div>
+                {mentor.avatar_url ? (
+                  <img
+                    src={mentor.avatar_url}
+                    alt={mentor.name || 'Mentor'}
+                    className="w-[38px] h-[38px] rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-[38px] h-[38px] rounded-full flex items-center justify-center font-semibold text-[13px] text-white shrink-0"
+                    style={{ background: colorFor(i) }}
+                  >
+                    {initialsFor(mentor.name)}
+                  </div>
+                )}
                 <div className="text-[13px] font-semibold text-text">{mentor.name || 'Unknown'}</div>
               </div>
               <div className="text-[11.5px] flex items-center gap-[10px]">

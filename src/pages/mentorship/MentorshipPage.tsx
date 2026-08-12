@@ -4,17 +4,16 @@ import { Card } from '../../components/Card';
 import { StatCard } from '../../components/StatCard';
 import { SearchBar } from '../../components/SearchBar';
 import { Button } from '../../components/Button';
-import { useMentors } from './useMentors';
+import { useMentors, type MentorWithAvatar } from './useMentors';
 import { MentorAvailabilityList } from './MentorAvailabilityList';
 import { AddMentorModal } from './AddMentorModal';
 import { MentorEditModal } from './MentorEditModal';
-import type { Mentor } from '../../types/database';
 
 export function MentorshipPage() {
-  const { mentors, sessionCount, unlistedMentorProfiles, setMentorAvailability, updateMentor, addMentor } = useMentors();
+  const { mentors, sessionCount, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor } = useMentors();
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
-  const [editItem, setEditItem] = useState<Mentor | null>(null);
+  const [editItem, setEditItem] = useState<MentorWithAvatar | null>(null);
 
   const availableCount = mentors.filter((m) => m.available).length;
 
@@ -48,7 +47,13 @@ export function MentorshipPage() {
       </Card>
 
       <AddMentorModal open={addOpen} profiles={unlistedMentorProfiles} onClose={() => setAddOpen(false)} onAdd={addMentor} />
-      <MentorEditModal item={editItem} onClose={() => setEditItem(null)} onSave={updateMentor} />
+      <MentorEditModal
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        onSave={updateMentor}
+        onUploadAvatar={uploadMentorAvatar}
+        onRemoveAvatar={removeMentorAvatar}
+      />
     </>
   );
 }

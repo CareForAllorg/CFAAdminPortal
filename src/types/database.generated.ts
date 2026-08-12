@@ -94,6 +94,7 @@ export interface Database {
           buildings_mapped: number;
           km_roads_mapped: number;
           calendly_url: string | null;
+          avatar_url: string | null;
         };
         Insert: {
           id: string;
@@ -121,6 +122,7 @@ export interface Database {
           buildings_mapped?: number;
           km_roads_mapped?: number;
           calendly_url?: string | null;
+          avatar_url?: string | null;
         };
         Update: {
           id?: string;
@@ -148,6 +150,7 @@ export interface Database {
           buildings_mapped?: number;
           km_roads_mapped?: number;
           calendly_url?: string | null;
+          avatar_url?: string | null;
         };
         Relationships: [
           {

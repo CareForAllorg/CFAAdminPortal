@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
@@ -6,6 +7,26 @@ import type { Database } from '../../src/types/database.generated.js';
 const MENTOR_COLUMNS = 'id, name, calendly_link, available, profile_id';
 
 type MentorUpdate = Database['public']['Tables']['mentors']['Update'];
+type MentorRow = { id: string; name: string; calendly_link: string | null; available: boolean; profile_id: string };
+
+// mentors.profile_id has no FK relationship PostgREST can embed on (same
+// situation as service_logs.user_id -- see api/_lib/joinProfiles.ts), so
+// avatar_url is attached with a second query rather than a nested select.
+async function attachAvatars<T extends MentorRow>(
+  supabase: SupabaseClient<Database>,
+  rows: T[]
+): Promise<(T & { avatar_url: string | null })[]> {
+  const profileIds = Array.from(new Set(rows.map((r) => r.profile_id)));
+  if (profileIds.length === 0) { return rows.map((r) => ({ ...r, avatar_url: null })); }
+
+  const { data, error } = await supabase.from('profiles').select('id, avatar_url').in('id', profileIds);
+  if (error) { throw error; }
+
+  const avatarByProfileId: Record<string, string | null> = {};
+  (data ?? []).forEach((p) => { avatarByProfileId[p.id] = p.avatar_url; });
+
+  return rows.map((r) => ({ ...r, avatar_url: avatarByProfileId[r.profile_id] ?? null }));
+}
 
 // Handles /api/mentors (list/create) and /api/mentors/:id (patch/delete).
 export async function mentors(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
@@ -16,7 +37,7 @@ export async function mentors(req: VercelRequest, res: VercelResponse, ctx: Requ
   if (req.method === 'GET') {
     const { data, error } = await supabase.from('mentors').select(MENTOR_COLUMNS).order('name');
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+    sendJson(res, 200, { data: await attachAvatars(supabase, data ?? []) });
     return;
   }
 
@@ -47,7 +68,8 @@ export async function mentors(req: VercelRequest, res: VercelResponse, ctx: Requ
       if (error.code === '23505') { badRequest(res, 'This mentor already has a booking-availability entry'); return; }
       throw error;
     }
-    sendJson(res, 201, { data });
+    const [withAvatar] = await attachAvatars(supabase, [data]);
+    sendJson(res, 201, { data: withAvatar });
     return;
   }
 
@@ -74,7 +96,8 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
 
     const { data, error } = await supabase.from('mentors').update(updates).eq('id', id).select(MENTOR_COLUMNS).single();
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+    const [withAvatar] = await attachAvatars(supabase, [data]);
+    sendJson(res, 200, { data: withAvatar });
     return;
   }
 
