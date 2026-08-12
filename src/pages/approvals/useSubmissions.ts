@@ -38,9 +38,12 @@ export function useSubmissions(onMutated: () => void) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    // Mapping and mapathon submissions have their own approval tabs
+    // (see useMappingSubmissions.ts / useMapathonSubmissions.ts) -- excluded
+    // here so they don't also show up in the general Project & Impact queue.
     const result = await apiOrToast(
       api.get<{ data: ServiceLogApiRow[]; total: number }>(
-        `/service-logs?status=pending&page=${page}&limit=${SUBMISSIONS_PAGE_SIZE}`
+        `/service-logs?status=pending&activityTypeExcludes=map&page=${page}&limit=${SUBMISSIONS_PAGE_SIZE}`
       ),
       'Loading submissions',
       { data: [], total: 0 }

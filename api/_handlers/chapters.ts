@@ -146,7 +146,8 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
     supabase.from('chapters').select('id, name, created_at, project_count_override').order('name'),
     supabase.from('profiles').select('id, first_name, last_name, chapter_id, role'),
     supabase.from('chapter_checkins').select('id, chapter_name, quarter, activities, member_count, challenges, submitted_at').order('submitted_at', { ascending: false }),
-    supabase.from('service_logs').select('user_id, activity_type').eq('status', 'approved').ilike('activity_type', '%project%'),
+    supabase.from('service_logs').select('user_id, activity_type').eq('status', 'approved').ilike('activity_type', '%project%')
+      .gte('submitted_at', `${currentYear}-01-01`).lt('submitted_at', `${currentYear + 1}-01-01`),
     supabase.from('checkin_deadlines').select('year, q1, q2, q3, q4').eq('year', currentYear).maybeSingle(),
   ]);
 

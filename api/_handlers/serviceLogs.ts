@@ -45,6 +45,9 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
     const activityTypeContains = firstQueryValue(req, 'activityTypeContains');
     if (activityTypeContains) { query = query.ilike('activity_type', `%${activityTypeContains}%`); }
 
+    const activityTypeExcludes = firstQueryValue(req, 'activityTypeExcludes');
+    if (activityTypeExcludes) { query = query.not('activity_type', 'ilike', `%${activityTypeExcludes}%`); }
+
     const submittedAfter = firstQueryValue(req, 'submittedAfter');
     if (submittedAfter) { query = query.gte('submitted_at', submittedAfter); }
 
