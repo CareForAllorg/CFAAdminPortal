@@ -9,7 +9,7 @@ interface ResourceEditModalProps {
   onSave: (id: string, payload: Partial<Resource>) => Promise<boolean>;
 }
 
-const AUDIENCES = ['All Members', 'Chapter Leads'];
+const AUDIENCES = ['All Members', 'Chapter Leads', 'Chapter Members', 'Independent Members'];
 
 const inputClass = 'w-full px-[13px] py-[9px] border border-border rounded-lg text-[13px] text-text bg-bg outline-none font-sans transition-colors duration-150 focus:border-brand focus:bg-white';
 const labelClass = 'block text-[11px] font-bold text-muted uppercase tracking-[0.05em] mb-[6px]';
