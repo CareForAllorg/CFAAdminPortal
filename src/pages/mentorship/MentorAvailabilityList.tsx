@@ -22,9 +22,10 @@ interface MentorAvailabilityListProps {
   mentors: Mentor[];
   searchQuery: string;
   onSetAvailability: (mentorId: string, available: boolean) => void;
+  onEdit: (mentor: Mentor) => void;
 }
 
-export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability }: MentorAvailabilityListProps) {
+export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability, onEdit }: MentorAvailabilityListProps) {
   const [confirmMentor, setConfirmMentor] = useState<Mentor | null>(null);
 
   const query = searchQuery.trim().toLowerCase();
@@ -64,7 +65,7 @@ export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability
                 </div>
                 <div className="text-[13px] font-semibold text-text">{mentor.name || 'Unknown'}</div>
               </div>
-              <div className="text-[11.5px]">
+              <div className="text-[11.5px] flex items-center gap-[10px]">
                 {mentor.calendly_link ? (
                   <a
                     href={mentor.calendly_link}
@@ -77,6 +78,12 @@ export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability
                 ) : (
                   <span className="text-muted">-</span>
                 )}
+                <button
+                  onClick={() => onEdit(mentor)}
+                  className="text-[11.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline"
+                >
+                  Edit
+                </button>
               </div>
               <div>
                 <StatusPill variant={mentor.available ? 'success' : 'warning'}>

@@ -64,6 +64,11 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
       updates.available = req.body.available;
     }
     if (req.body && 'calendly_link' in req.body) { updates.calendly_link = req.body.calendly_link; }
+    if (req.body && 'name' in req.body) {
+      const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+      if (!name) { badRequest(res, 'name must be a non-empty string'); return; }
+      updates.name = name;
+    }
 
     if (Object.keys(updates).length === 0) { badRequest(res, 'No updatable fields provided'); return; }
 
