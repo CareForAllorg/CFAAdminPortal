@@ -19,6 +19,7 @@ import { uploadsSignedUrl, uploadMentorAvatar } from './_handlers/uploads.js';
 import { partners } from './_handlers/partners.js';
 import { formSubmissions } from './_handlers/formSubmissions.js';
 import { mapathonDates } from './_handlers/mapathonDates.js';
+import { mentorApplications, mentorApplicationsWebhook } from './_handlers/mentorApplications.js';
 
 // Single entry point for the entire API. Every file directly under /api
 // (one per resource/verb) counts as its own Vercel Serverless Function,
@@ -50,6 +51,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return await profiles(req, res, ctx, sub);
     }
 
+    // Called by a Google Apps Script trigger on the external "Become a
+    // Mentor" form, not by a signed-in admin -- there's no Supabase
+    // session to require here, only the handler's own shared-secret check.
+    if (resource === 'mentor-applications' && sub === 'webhook') {
+      return await mentorApplicationsWebhook(req, res);
+    }
+
     const ctx = await requireAdmin(req);
 
     switch (resource) {
@@ -70,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'partners': return await partners(req, res, ctx, sub);
       case 'form-submissions': return await formSubmissions(req, res, ctx, sub);
       case 'mapathon-dates': return await mapathonDates(req, res, ctx, sub);
+      case 'mentor-applications': return await mentorApplications(req, res, ctx, sub);
       case 'uploads':
         if (sub === 'signed-url') { return await uploadsSignedUrl(req, res, ctx); }
         if (sub === 'mentor-avatar') { return await uploadMentorAvatar(req, res, ctx); }

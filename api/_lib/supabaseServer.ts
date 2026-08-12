@@ -16,3 +16,16 @@ export function supabaseForToken(accessToken: string): SupabaseClient<Database> 
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+// The only service-role client in this codebase -- every other endpoint
+// deliberately uses supabaseForToken so RLS applies. This exists solely
+// for the mentor-application webhook (api/_handlers/mentorApplications.ts),
+// which is called by a Google Apps Script trigger with no Supabase user
+// session to forward, so there's no JWT to scope a normal client to.
+// Gated by its own shared-secret check in the handler, not by RLS.
+export function supabaseServiceRole(): SupabaseClient<Database> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
+  return createClient<Database>(SUPABASE_URL, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
