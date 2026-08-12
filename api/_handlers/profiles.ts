@@ -8,7 +8,7 @@ const PROFILE_COLUMNS = 'id, first_name, last_name, role, gender, education_leve
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
-const PATCHABLE_FIELDS = ['first_name', 'last_name', 'role', 'gender', 'education_level', 'date_of_birth', 'chapter_id'] as const satisfies readonly (keyof ProfileUpdate)[];
+const PATCHABLE_FIELDS = ['first_name', 'last_name', 'role', 'gender', 'education_level', 'date_of_birth', 'chapter_id', 'calendly_url'] as const satisfies readonly (keyof ProfileUpdate)[];
 
 // Handles /api/profiles (list, with role/q/page/limit filters),
 // /api/profiles/:id, and /api/profiles/me.

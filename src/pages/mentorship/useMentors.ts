@@ -43,6 +43,34 @@ export function useMentors() {
     }));
   }
 
+  // The member-facing app looks up a mentor's name AND Calendly link
+  // through profile_id (see "Connect mentors table to profiles via
+  // profile_id FK") -- it reads profiles.calendly_url, not this table's
+  // own `calendly_link` column, so both edits have to reach `profiles`
+  // too, or admins see the change here while members keep seeing the old
+  // name/link.
+  async function updateMentor(mentorId: string, payload: { name: string; calendly_link: string | null }) {
+    const mentor = state.mentors.find((m) => m.id === mentorId);
+    if (!mentor) { return false; }
+
+    const trimmed = payload.name.trim();
+    const spaceIdx = trimmed.indexOf(' ');
+    const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+    const last_name = spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1).trim();
+
+    const [mentorOk, profileOk] = await Promise.all([
+      mutateOrToast(api.patch(`/mentors/${mentorId}`, payload), 'Updating mentor'),
+      mutateOrToast(api.patch(`/profiles/${mentor.profile_id}`, { first_name, last_name, calendly_url: payload.calendly_link }), 'Updating mentor profile'),
+    ]);
+    if (!mentorOk || !profileOk) { return false; }
+
+    setState((prev) => ({
+      ...prev,
+      mentors: prev.mentors.map((m) => (m.id === mentorId ? { ...m, ...payload } : m)),
+    }));
+    return true;
+  }
+
   async function addMentor(profileId: string) {
     const ok = await mutateOrToast(api.post('/mentors', { profile_id: profileId, available: false }), 'Adding mentor');
     if (ok) { await load(); }
@@ -53,5 +81,5 @@ export function useMentors() {
     (p) => !state.mentors.some((m) => m.profile_id === p.id),
   );
 
-  return { ...state, unlistedMentorProfiles, setMentorAvailability, addMentor };
+  return { ...state, unlistedMentorProfiles, setMentorAvailability, updateMentor, addMentor };
 }
