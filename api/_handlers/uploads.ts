@@ -2,9 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import { firstQueryValue } from '../_lib/pagination.js';
+import { validateAttendanceCsv } from '../_lib/parseAttendance.js';
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const MAX_ATTENDANCE_BYTES = 5 * 1024 * 1024;
 const DATA_URL_PATTERN = /^data:(image\/(?:png|jpeg|jpg|webp|gif));base64,(.+)$/;
+const ATTENDANCE_DATA_URL_PATTERN = /^data:(text\/csv|application\/csv);base64,(.+)$/;
 
 // Generates a short-lived signed URL for a proof photo in the
 // member-facing app's private `proof-uploads` Storage bucket (mapping
@@ -68,4 +71,41 @@ export async function uploadMentorAvatar(req: VercelRequest, res: VercelResponse
   if (profileError) { throw profileError; }
 
   sendJson(res, 200, { url });
+}
+
+// Uploads an attendance list (name/email CSV) for a mapathon to the private
+// `mapathon-attendance` Storage bucket -- the admin picks a file in the
+// publishing form, this stores it, and PR 9's form then PATCHes the
+// returned path onto mapathon_dates.attendance_list_path. Reads go through
+// a signed URL (see the "Admins can read mapathon attendance" policy), so
+// the attendee names/emails never land in a public bucket. dateId is
+// optional so a re-upload replaces the same `${dateId}/attendance.csv`
+// path instead of stacking stale copies.
+export async function uploadMapathonAttendance(req: VercelRequest, res: VercelResponse, ctx: RequestContext) {
+  if (req.method !== 'POST') {
+    methodNotAllowed(res, ['POST']);
+    return;
+  }
+
+  const dateId = typeof req.body?.dateId === 'string' && req.body.dateId.trim() !== '' ? req.body.dateId.trim() : undefined;
+  const dataUrl = typeof req.body?.dataUrl === 'string' ? req.body.dataUrl : '';
+  const match = ATTENDANCE_DATA_URL_PATTERN.exec(dataUrl);
+  if (!match) { badRequest(res, 'dataUrl must be a base64-encoded text/csv or application/csv file'); return; }
+
+  const [, contentType, base64] = match;
+  const buffer = Buffer.from(base64, 'base64');
+  if (buffer.byteLength === 0) { badRequest(res, 'CSV file must not be empty'); return; }
+  if (buffer.byteLength > MAX_ATTENDANCE_BYTES) { badRequest(res, 'CSV file must be 5MB or smaller'); return; }
+
+  const validation = validateAttendanceCsv(buffer.toString('utf8'));
+  if (!validation.ok) { badRequest(res, validation.reason); return; }
+
+  const path = `${dateId ?? Date.now()}/attendance.csv`;
+
+  const { error: uploadError } = await ctx.supabase.storage
+    .from('mapathon-attendance')
+    .upload(path, buffer, { contentType, upsert: true });
+  if (uploadError) { throw uploadError; }
+
+  sendJson(res, 200, { path, attendeeCount: validation.attendeeCount });
 }

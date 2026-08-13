@@ -510,6 +510,10 @@ export interface Database {
           hours: number;
           label: string | null;
           created_at: string;
+          total_buildings_mapped: number;
+          total_km_roads_mapped: number;
+          bonus_service_hours: number;
+          attendance_list_path: string | null;
         };
         Insert: {
           id?: string;
@@ -517,6 +521,10 @@ export interface Database {
           hours: number;
           label?: string | null;
           created_at?: string;
+          total_buildings_mapped?: number;
+          total_km_roads_mapped?: number;
+          bonus_service_hours?: number;
+          attendance_list_path?: string | null;
         };
         Update: {
           id?: string;
@@ -524,6 +532,10 @@ export interface Database {
           hours?: number;
           label?: string | null;
           created_at?: string;
+          total_buildings_mapped?: number;
+          total_km_roads_mapped?: number;
+          bonus_service_hours?: number;
+          attendance_list_path?: string | null;
         };
         Relationships: [];
       };

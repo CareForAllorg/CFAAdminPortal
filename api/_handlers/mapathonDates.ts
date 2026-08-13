@@ -3,11 +3,28 @@ import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import type { Database } from '../../src/types/database.generated.js';
 
-const MAPATHON_DATE_COLUMNS = 'id, event_date, hours, label, created_at';
+const MAPATHON_DATE_COLUMNS = 'id, event_date, hours, label, created_at, total_buildings_mapped, total_km_roads_mapped, bonus_service_hours, attendance_list_path';
 
 type MapathonDateUpdate = Database['public']['Tables']['mapathon_dates']['Update'];
 
-const PATCHABLE_FIELDS = ['event_date', 'hours', 'label'] as const satisfies readonly (keyof MapathonDateUpdate)[];
+const PATCHABLE_FIELDS = [
+  'event_date', 'hours', 'label',
+  'total_buildings_mapped', 'total_km_roads_mapped', 'bonus_service_hours', 'attendance_list_path',
+] as const satisfies readonly (keyof MapathonDateUpdate)[];
+
+// total_buildings_mapped/total_km_roads_mapped/bonus_service_hours are
+// self-reported by the admin, not calculated from member submissions --
+// zero is a valid, common value (e.g. a mapathon with no bonus hours), so
+// these only get validated as non-negative, not required/positive like
+// `hours` (the per-attendee credited amount, which must be > 0). Used by
+// both verbs: POST validates then inserts them, PATCH validates before the
+// .update() -- either one rejects a non-negative violation with a 400.
+// Returns null for an absent value (leave the column alone) and NaN for an
+// explicitly invalid one.
+function nonNegativeNumber(value: unknown): number | null {
+  if (value === undefined) { return null; }
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : NaN;
+}
 
 // Admin-configured mapathon dates + associated hours -- the member-facing
 // Mapathon Time Log form (VolunteerPortalCFA) reads this list to populate
@@ -31,13 +48,21 @@ export async function mapathonDates(req: VercelRequest, res: VercelResponse, ctx
     if (!eventDate) { badRequest(res, 'event_date is required'); return; }
     if (!Number.isFinite(hours) || hours <= 0) { badRequest(res, 'hours must be a positive number'); return; }
 
+    const insert: Database['public']['Tables']['mapathon_dates']['Insert'] = {
+      event_date: eventDate,
+      hours,
+      label: req.body.label || null,
+    };
+    for (const field of ['total_buildings_mapped', 'total_km_roads_mapped', 'bonus_service_hours'] as const) {
+      const value = nonNegativeNumber(req.body?.[field]);
+      if (value === null) { continue; }
+      if (!Number.isFinite(value)) { badRequest(res, `${field} must be a non-negative number`); return; }
+      insert[field] = value;
+    }
+
     const { data, error } = await supabase
       .from('mapathon_dates')
-      .insert({
-        event_date: eventDate,
-        hours,
-        label: req.body.label || null,
-      })
+      .insert(insert)
       .select(MAPATHON_DATE_COLUMNS)
       .single();
     if (error) { throw error; }
@@ -61,6 +86,13 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
 
     if ('event_date' in updates && !updates.event_date) { badRequest(res, 'event_date must be a non-empty string'); return; }
     if ('hours' in updates && (typeof updates.hours !== 'number' || updates.hours <= 0)) { badRequest(res, 'hours must be a positive number'); return; }
+    for (const field of ['total_buildings_mapped', 'total_km_roads_mapped', 'bonus_service_hours'] as const) {
+      if (field in updates) {
+        const value = nonNegativeNumber(updates[field]);
+        if (typeof value !== 'number' || !Number.isFinite(value)) { badRequest(res, `${field} must be a non-negative number`); return; }
+        updates[field] = value;
+      }
+    }
     if (Object.keys(updates).length === 0) { badRequest(res, 'No updatable fields provided'); return; }
 
     const { data, error } = await supabase.from('mapathon_dates').update(updates).eq('id', id).select(MAPATHON_DATE_COLUMNS).single();
