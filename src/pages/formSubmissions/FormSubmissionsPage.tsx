@@ -109,7 +109,7 @@ export function FormSubmissionsPage() {
                   disabled={downloadingType === form.formType}
                   onClick={() => handleDownload(form)}
                 >
-                  <i className="ti ti-download text-[13px] mr-1" />{downloadingType === form.formType ? 'Preparing…' : 'CSV'}
+                  <i className="ti ti-download text-[13px] mr-1" />{downloadingType === form.formType ? 'Preparing…' : 'Download CSV'}
                 </Button>
                 {form.openPath ? (
                   <a
