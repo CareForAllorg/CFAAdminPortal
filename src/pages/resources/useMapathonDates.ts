@@ -7,9 +7,29 @@ export interface MapathonDate {
   hours: number;
   label: string | null;
   created_at: string;
+  total_buildings_mapped: number;
+  total_km_roads_mapped: number;
+  bonus_service_hours: number;
+  attendance_list_path: string | null;
 }
 
 export type MapathonDatePayload = Partial<Omit<MapathonDate, 'id' | 'created_at'>>;
+
+export const MAX_ATTENDANCE_BYTES = 5 * 1024 * 1024;
+
+// readAsDataURL gives `data:<file.type>;base64,...` -- some browsers leave
+// file.type empty for .csv, which would make the upload endpoint's
+// text/csv|application/csv dataUrl regex reject the file. Normalize the
+// prefix so the backend always sees a valid CSV dataUrl regardless of what
+// the browser reported.
+async function readCsvAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).replace(/^data:[^;]+;base64,/, 'data:text/csv;base64,'));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 // Backs the member-facing app's Mapathon Time Log "when was the mapathon"
 // dropdown (VolunteerPortalCFA's GET /api/mapping/mapathon-dates) -- adding
@@ -45,5 +65,18 @@ export function useMapathonDates() {
     return ok;
   }
 
-  return { dates, loading, createDate, updateDate, deleteDate, reload: load };
+  // Uploads the attendance CSV to the private mapathon-attendance bucket
+  // and returns the { path, attendeeCount } the publish form then PATCHes
+  // onto the date (see api/_handlers/uploads.ts). Re-uploading the same
+  // date replaces the stored file via upsert.
+  async function uploadAttendance(dateId: string, file: File): Promise<{ path: string; attendeeCount: number } | null> {
+    const dataUrl = await readCsvAsDataUrl(file);
+    return apiOrToast<{ path: string; attendeeCount: number } | null>(
+      api.post<{ path: string; attendeeCount: number }>('/uploads/mapathon-attendance', { dateId, dataUrl }),
+      'Uploading attendance list',
+      null
+    );
+  }
+
+  return { dates, loading, createDate, updateDate, deleteDate, uploadAttendance, reload: load };
 }

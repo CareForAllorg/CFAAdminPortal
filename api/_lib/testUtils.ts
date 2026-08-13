@@ -23,6 +23,9 @@ export function mockRes(): MockResponse {
 export interface MockSupabaseOptions {
   selectData?: unknown;
   selectError?: unknown;
+  // Handlers that query more than one table (e.g. impact.ts) need distinct
+  // results per .from(table) call -- per-table data wins over selectData.
+  selectByTable?: Record<string, { data?: unknown; error?: unknown }>;
   insertData?: unknown;
   insertError?: unknown;
   updateData?: unknown;
@@ -40,6 +43,7 @@ export interface MockCalls {
   deletes: unknown[][];
   uploads: unknown[][];
   storageBuckets: string[];
+  ins: unknown[][];
 }
 
 export interface MockSupabase {
@@ -65,7 +69,7 @@ export interface MockSupabase {
 // final result carries the data/error chosen in MockSupabaseOptions.
 export function mockSupabase(opts: MockSupabaseOptions = {}): MockSupabase {
   const calls: MockCalls = {
-    selects: [], orders: [], inserts: [], updates: [], eqs: [], deletes: [], uploads: [], storageBuckets: [],
+    selects: [], orders: [], inserts: [], updates: [], eqs: [], deletes: [], uploads: [], storageBuckets: [], ins: [],
   };
 
   const result = (data: unknown, error: unknown) => ({
@@ -73,13 +77,16 @@ export function mockSupabase(opts: MockSupabaseOptions = {}): MockSupabase {
     error: error ?? null,
     select(...args: unknown[]) { calls.selects.push(args); return this; },
     order(...args: unknown[]) { calls.orders.push(args); return this; },
+    in(...args: unknown[]) { calls.ins.push(args); return this; },
+    eq(...args: unknown[]) { calls.eqs.push(args); return this; },
     single() { return this; },
   });
 
-  const table = {
+  const makeTable = (tableName: string) => ({
     select(...args: unknown[]) {
       calls.selects.push(args);
-      return result(opts.selectData, opts.selectError);
+      const per = opts.selectByTable?.[tableName];
+      return result(per?.data ?? opts.selectData, per?.error ?? opts.selectError);
     },
     insert(...args: unknown[]) {
       calls.inserts.push(args);
@@ -113,11 +120,11 @@ export function mockSupabase(opts: MockSupabaseOptions = {}): MockSupabase {
         },
       };
     },
-  };
+  });
 
   return {
     calls,
-    from: () => table,
+    from: (tableName: string) => makeTable(tableName),
     storage: {
       from: (bucket: string) => {
         calls.storageBuckets.push(bucket);

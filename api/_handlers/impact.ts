@@ -19,18 +19,20 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
     return;
   }
 
-  const [membersRes, chaptersRes, logsRes] = await Promise.all([
+  const [membersRes, chaptersRes, logsRes, mapathonsRes] = await Promise.all([
     supabase.from('profiles').select('created_at').in('role', MEMBER_ROLES),
     supabase.from('chapters').select('created_at'),
     supabase
       .from('service_logs')
       .select('user_id, primary_impact, impact_magnitude, secondary_impact, secondary_impact_magnitude, submitted_at')
       .eq('status', 'approved'),
+    supabase.from('mapathon_dates').select('event_date, total_buildings_mapped, total_km_roads_mapped'),
   ]);
 
   if (membersRes.error) { throw membersRes.error; }
   if (chaptersRes.error) { throw chaptersRes.error; }
   if (logsRes.error) { throw logsRes.error; }
+  if (mapathonsRes.error) { throw mapathonsRes.error; }
 
   const categories: Record<string, { date: string; magnitude: number }[]> = {};
   function addEvent(category: string | null, magnitude: number | null, date: string | null) {
@@ -73,6 +75,17 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
   });
   latestMappingRowByUser.forEach((row) => {
     MAPPING_CATEGORIES.forEach((category) => addEvent(category, mappingValue(row, category), row.submitted_at));
+  });
+
+  // Mapathon self-reported totals (see the publishing_stats migration) are
+  // the org's own contribution, NOT member submissions -- they get added
+  // on top of the replace-with-latest per-member total above, anchored at
+  // the mapathon's event_date. Dates never published keep their 0
+  // defaults, so they contribute nothing rather than being filtered out.
+  type MapathonRow = NonNullable<typeof mapathonsRes.data>[number];
+  (mapathonsRes.data ?? []).forEach((row: MapathonRow) => {
+    if (Number(row.total_buildings_mapped) > 0) { addEvent('Buildings Mapped', row.total_buildings_mapped, row.event_date); }
+    if (Number(row.total_km_roads_mapped) > 0) { addEvent('Roads Mapped', row.total_km_roads_mapped, row.event_date); }
   });
 
   (logsRes.data ?? []).forEach((row) => {
