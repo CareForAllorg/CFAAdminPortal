@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { methodNotAllowed, sendJson } from '../_lib/http.js';
 import { MEMBER_ROLES } from '../../src/roles.js';
+import { computeChapterCompliance } from '../_lib/compliance.js';
 
 export async function overview(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
   if (sub !== 'stats') {
@@ -35,9 +36,16 @@ export async function overview(req: VercelRequest, res: VercelResponse, ctx: Req
     .gte('created_at', thirtyDaysAgo);
   if (newMemberErr) { throw newMemberErr; }
 
+  // Same derivation the Chapters page's compliance table uses, so the
+  // Overview's "non-compliant" sub doesn't drift from it (or go stale the
+  // way the old hardcoded "7 non-compliant" string did).
+  const { enriched } = await computeChapterCompliance(req, ctx);
+  const nonCompliantCount = enriched.filter((c) => !c.compliant).length;
+
   sendJson(res, 200, {
     chapterCount: chapterCount ?? 0,
     memberCount: memberCount ?? 0,
     newMemberCount: newMemberCount ?? 0,
+    nonCompliantCount,
   });
 }

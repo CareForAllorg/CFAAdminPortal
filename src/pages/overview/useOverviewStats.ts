@@ -5,16 +5,18 @@ interface OverviewStats {
   chapterCount: number | null;
   memberCount: number | null;
   newMemberCount: number | null;
+  nonCompliantCount: number | null;
 }
 
 interface OverviewStatsResponse {
   chapterCount: number;
   memberCount: number;
   newMemberCount: number;
+  nonCompliantCount: number;
 }
 
 export function useOverviewStats() {
-  const [stats, setStats] = useState<OverviewStats>({ chapterCount: null, memberCount: null, newMemberCount: null });
+  const [stats, setStats] = useState<OverviewStats>({ chapterCount: null, memberCount: null, newMemberCount: null, nonCompliantCount: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +28,12 @@ export function useOverviewStats() {
         null
       );
       if (!cancelled && result) {
-        setStats({ chapterCount: result.chapterCount, memberCount: result.memberCount, newMemberCount: result.newMemberCount });
+        setStats({
+          chapterCount: result.chapterCount,
+          memberCount: result.memberCount,
+          newMemberCount: result.newMemberCount,
+          nonCompliantCount: result.nonCompliantCount,
+        });
       }
     })();
 

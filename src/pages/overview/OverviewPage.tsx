@@ -38,8 +38,14 @@ export function OverviewPage() {
         <StatCard
           label="Total Chapters"
           value={stats.chapterCount ?? '—'}
-          sub="7 non-compliant"
-          subClassName="text-accent"
+          sub={
+            stats.nonCompliantCount == null
+              ? undefined
+              : stats.nonCompliantCount === 0
+                ? 'All chapters compliant'
+                : `${stats.nonCompliantCount} non-compliant`
+          }
+          subClassName={stats.nonCompliantCount != null && stats.nonCompliantCount > 0 ? 'text-accent' : undefined}
         />
         <StatCard
           label="Total Members"
