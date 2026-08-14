@@ -12,13 +12,22 @@ import { AddMentorModal } from './AddMentorModal';
 import { MentorEditModal } from './MentorEditModal';
 
 export function MentorshipPage() {
-  const { mentors, sessionCount, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor } = useMentors();
+  const { mentors, sessionCount, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor, reloadMentors } = useMentors();
   const { pending: pendingApplications, setApplicationStatus } = useMentorApplications();
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<MentorWithAvatar | null>(null);
 
   const availableCount = mentors.filter((m) => m.available).length;
+
+  // The new mentors row from approving an application lives in a separate
+  // hook's state (useMentors), which has no way to know a row landed
+  // outside of its own actions -- reload it explicitly so the mentor
+  // shows up here without needing a full page refresh.
+  async function handleApplicationStatus(id: string, status: 'approved' | 'rejected') {
+    const ok = await setApplicationStatus(id, status);
+    if (ok && status === 'approved') { await reloadMentors(); }
+  }
 
   return (
     <>
@@ -41,10 +50,10 @@ export function MentorshipPage() {
           </div>
         </div>
         <div className="text-[12.5px] text-muted mb-[18px] leading-[1.5]">
-          Submissions from the "Become a Mentor" form. Approving here only marks the application reviewed -- creating the actual mentor account and booking-availability entry is still a manual step for now.
+          Submissions from the "Become a Mentor" form. Approving creates their account, sends them an email to set up sign-in, and adds them to the mentor list below (booking starts OFF until you turn it on).
         </div>
 
-        <MentorApplicationsList applications={pendingApplications} onSetStatus={setApplicationStatus} />
+        <MentorApplicationsList applications={pendingApplications} onSetStatus={handleApplicationStatus} />
       </Card>
 
       <Card>

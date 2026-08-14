@@ -41,13 +41,16 @@ export function useMentorApplications() {
 
   useEffect(() => { load(); }, [load]);
 
-  // "Approved" here only marks the application reviewed -- it does not
-  // create a login account or a mentors row. Turning an approved
-  // application into a real account is a manual step for now.
-  async function setApplicationStatus(id: string, status: 'approved' | 'rejected') {
+  // "Approved" provisions a real account server-side (see
+  // provisionMentorAccount in api/_handlers/mentorApplications.ts) and
+  // creates a mentors row -- callers should reload the separate
+  // useMentors() list on a successful approve, since that new row won't
+  // show up there on its own.
+  async function setApplicationStatus(id: string, status: 'approved' | 'rejected'): Promise<boolean> {
     const ok = await mutateOrToast(api.patch(`/mentor-applications/${id}`, { status }), 'Updating application');
-    if (!ok) { return; }
+    if (!ok) { return false; }
     setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+    return true;
   }
 
   const pending = applications.filter((a) => a.status === 'pending');

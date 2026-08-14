@@ -51,12 +51,75 @@ export async function mentorApplicationsWebhook(req: VercelRequest, res: VercelR
   sendJson(res, 201, { ok: true });
 }
 
+function splitName(fullName: string): { first_name: string; last_name: string } {
+  const trimmed = fullName.trim();
+  const spaceIdx = trimmed.indexOf(' ');
+  return spaceIdx === -1
+    ? { first_name: trimmed, last_name: '' }
+    : { first_name: trimmed.slice(0, spaceIdx), last_name: trimmed.slice(spaceIdx + 1).trim() };
+}
+
+// Provisions a real account for an approved application: an invited
+// Supabase Auth user (auth.admin.inviteUserByEmail sends the actual
+// invite/password-setup email -- no temp password ever passes through
+// this admin UI), the public.users row profiles.id requires (there's no
+// trigger that creates this automatically for auth-API-created users,
+// confirmed the hard way provisioning the CareForAll admin account
+// manually), a profiles row with role 'mentor', and the mentors row this
+// admin app's booking-availability list reads.
+async function provisionMentorAccount(application: {
+  id: string; full_name: string; email: string; date_of_birth: string | null;
+  gender: string | null; location: string | null; calendly_link: string | null;
+  agreed_general_participation: boolean; agreed_media_release: boolean;
+}) {
+  const admin = supabaseServiceRole();
+  const { first_name, last_name } = splitName(application.full_name);
+
+  const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(application.email);
+  let userId: string;
+  if (inviteError) {
+    // Re-approving (or a prior partial failure) shouldn't crash on "user
+    // already registered" -- look up the existing account instead of
+    // treating it as fatal.
+    if (!inviteError.message.toLowerCase().includes('already been registered')) { throw inviteError; }
+    const { data: existing, error: listError } = await admin.auth.admin.listUsers();
+    if (listError) { throw listError; }
+    const match = existing.users.find((u) => u.email?.toLowerCase() === application.email.toLowerCase());
+    if (!match) { throw inviteError; }
+    userId = match.id;
+  } else {
+    userId = invited.user.id;
+  }
+
+  const { error: userError } = await admin
+    .from('users')
+    .upsert({ id: userId, email: application.email, name: application.full_name }, { onConflict: 'id' });
+  if (userError) { throw userError; }
+
+  const { error: profileError } = await admin.from('profiles').upsert({
+    id: userId,
+    first_name,
+    last_name,
+    role: 'mentor',
+    date_of_birth: application.date_of_birth,
+    gender: application.gender,
+    location: application.location,
+    calendly_url: application.calendly_link,
+    agreed_general_participation: application.agreed_general_participation,
+    agreed_media_release: application.agreed_media_release,
+  }, { onConflict: 'id' });
+  if (profileError) { throw profileError; }
+
+  const { error: mentorError } = await admin
+    .from('mentors')
+    .upsert({ profile_id: userId, name: application.full_name, calendly_link: application.calendly_link, available: false }, { onConflict: 'profile_id' });
+  if (mentorError) { throw mentorError; }
+}
+
 // Handles /api/mentor-applications (list) and /api/mentor-applications/:id
-// (approve/reject). "Approved" here only marks the application reviewed --
-// it deliberately does not create a login account or a mentors row. That
-// needs a real Supabase Auth user provisioned first, which depends on how
-// the member-facing app's own signup flow creates profiles rows (a
-// decision intentionally deferred rather than guessed at).
+// (approve/reject). Approving provisions a real account (see
+// provisionMentorAccount above); rejecting just marks the application
+// reviewed.
 export async function mentorApplications(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
   if (sub) { return byId(req, res, ctx, sub); }
 
@@ -84,6 +147,17 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   if (status !== 'approved' && status !== 'rejected') {
     badRequest(res, "status must be 'approved' or 'rejected'");
     return;
+  }
+
+  if (status === 'approved') {
+    const { data: application, error: fetchError } = await ctx.supabase
+      .from('mentor_applications')
+      .select('id, full_name, email, date_of_birth, gender, location, calendly_link, agreed_general_participation, agreed_media_release')
+      .eq('id', id)
+      .single();
+    if (fetchError) { throw fetchError; }
+
+    await provisionMentorAccount(application);
   }
 
   const { data, error } = await ctx.supabase

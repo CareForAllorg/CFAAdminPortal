@@ -122,5 +122,5 @@ export function useMentors() {
     (p) => !state.mentors.some((m) => m.profile_id === p.id),
   );
 
-  return { ...state, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor };
+  return { ...state, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor, reloadMentors: load };
 }
