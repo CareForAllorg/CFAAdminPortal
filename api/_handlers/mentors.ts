@@ -59,9 +59,15 @@ export async function mentors(req: VercelRequest, res: VercelResponse, ctx: Requ
 
     const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
 
+    // mentors.id has its own foreign key (mentors_id_fkey) -- it isn't an
+    // independently generated UUID, it's meant to equal the linked
+    // profile's id (same shared-primary-key pattern as profiles.id ->
+    // users.id). Omitting it here inserted null and violated the FK
+    // (found provisioning mentor applications -- see
+    // api/_handlers/mentorApplications.ts).
     const { data, error } = await supabase
       .from('mentors')
-      .insert({ profile_id: profileId, name, calendly_link: req.body.calendly_link ?? null, available: req.body.available ?? false })
+      .insert({ id: profileId, profile_id: profileId, name, calendly_link: req.body.calendly_link ?? null, available: req.body.available ?? false })
       .select(MENTOR_COLUMNS)
       .single();
     if (error) {

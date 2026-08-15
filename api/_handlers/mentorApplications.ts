@@ -112,7 +112,19 @@ async function provisionMentorAccount(application: {
   const { error: userError } = await admin
     .from('users')
     .upsert({ id: userId, email: application.email, name: application.full_name }, { onConflict: 'id' });
-  if (userError) { throw userError; }
+  if (userError) {
+    // users.email is separately unique from its id -- if some other row
+    // already owns this email (stale/manually-created data, or an
+    // auth.users id that drifted from what's in this table), onConflict:
+    // 'id' doesn't catch that, and this upsert 23505s instead of updating
+    // anything. Recover by adopting whichever id already owns the email
+    // as canonical rather than failing the whole approval.
+    if (userError.code !== '23505') { throw userError; }
+    const { data: byEmail, error: byEmailError } = await admin.from('users').select('id').eq('email', application.email).maybeSingle();
+    if (byEmailError) { throw byEmailError; }
+    if (!byEmail) { throw userError; }
+    userId = byEmail.id;
+  }
 
   const { error: profileError } = await admin.from('profiles').upsert({
     id: userId,
@@ -128,10 +140,33 @@ async function provisionMentorAccount(application: {
   }, { onConflict: 'id' });
   if (profileError) { throw profileError; }
 
-  const { error: mentorError } = await admin
+  // mentors.id has its own foreign key (mentors_id_fkey) -- it isn't an
+  // independently generated UUID, it's meant to equal the linked
+  // profile's id (same shared-primary-key pattern as profiles.id ->
+  // users.id elsewhere in this schema). A random UUID here violates that
+  // FK; profile_id ends up redundant with id, but harmless to keep.
+  const { data: existingMentor, error: existingMentorError } = await admin
     .from('mentors')
-    .upsert({ profile_id: userId, name: application.full_name, calendly_link: application.calendly_link, available: false }, { onConflict: 'profile_id' });
-  if (mentorError) { throw mentorError; }
+    .select('id')
+    .eq('profile_id', userId)
+    .maybeSingle();
+  if (existingMentorError) { throw existingMentorError; }
+
+  if (existingMentor) {
+    // Only name/Calendly link on re-approval -- not `available`, so this
+    // doesn't reset an already-provisioned mentor's booking toggle back
+    // to OFF every time an admin re-approves the same application.
+    const { error: mentorError } = await admin
+      .from('mentors')
+      .update({ name: application.full_name, calendly_link: application.calendly_link })
+      .eq('id', existingMentor.id);
+    if (mentorError) { throw mentorError; }
+  } else {
+    const { error: mentorError } = await admin
+      .from('mentors')
+      .insert({ id: userId, profile_id: userId, name: application.full_name, calendly_link: application.calendly_link, available: false });
+    if (mentorError) { throw mentorError; }
+  }
 }
 
 // Handles /api/mentor-applications (list) and /api/mentor-applications/:id
