@@ -51,6 +51,24 @@ export async function mentorApplicationsWebhook(req: VercelRequest, res: VercelR
   sendJson(res, 201, { ok: true });
 }
 
+// profiles.gender is a Postgres enum (gender_type), not free text -- the
+// form's raw radio-button values ("Woman", "Non-Binary", ...) don't match
+// its labels ("Female", "Nonbinary", ...) verbatim. Anything unrecognized
+// (including whatever a respondent typed into the form's free-text
+// "Other:" option) falls back to the enum's own 'Other' label rather than
+// failing the whole provisioning step.
+const GENDER_MAP: Record<string, string> = {
+  man: 'Male',
+  woman: 'Female',
+  'non-binary': 'Nonbinary',
+  'prefer not to say': 'Prefer Not to Say',
+  other: 'Other',
+};
+function mapGender(raw: string | null): string | null {
+  if (!raw) { return null; }
+  return GENDER_MAP[raw.trim().toLowerCase()] ?? 'Other';
+}
+
 function splitName(fullName: string): { first_name: string; last_name: string } {
   const trimmed = fullName.trim();
   const spaceIdx = trimmed.indexOf(' ');
@@ -102,7 +120,7 @@ async function provisionMentorAccount(application: {
     last_name,
     role: 'mentor',
     date_of_birth: application.date_of_birth,
-    gender: application.gender,
+    gender: mapGender(application.gender),
     location: application.location,
     calendly_url: application.calendly_link,
     agreed_general_participation: application.agreed_general_participation,
