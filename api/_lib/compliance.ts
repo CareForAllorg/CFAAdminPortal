@@ -102,8 +102,14 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
     const chapterCheckins = checkinsByChapterName[ch.name] || [];
 
     const quarterStatuses: QuarterStatus[] = QUARTERS.map((q) => {
+      // The volunteer portal's check-in form stores quarter as e.g.
+      // "Q1 (Jan - Mar)", not the bare "Q1" this compares against -- a
+      // strict equality here never matched anything, so every chapter's
+      // check-ins looked perpetually pending/overdue no matter what was
+      // actually submitted. Match on the leading "Q1"/"Q2"/"Q3"/"Q4"
+      // instead of the full descriptive string.
       const submitted = chapterCheckins.find(
-        (c) => c.quarter === q && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
+        (c) => (c.quarter || '').trim().startsWith(q) && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
       );
       if (submitted) { return 'done'; }
 

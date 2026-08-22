@@ -18,25 +18,37 @@ export interface Database {
           id: string;
           name: string;
           created_at: string;
+          cfa_id: string | null;
           project_count_override: number | null;
+          visibility: string | null;
           status: string;
           meta: Json | null;
+          instagram: string | null;
+          tiktok: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
+          cfa_id?: string | null;
           project_count_override?: number | null;
+          visibility?: string | null;
           status?: string;
           meta?: Json | null;
+          instagram?: string | null;
+          tiktok?: string | null;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
+          cfa_id?: string | null;
           project_count_override?: number | null;
+          visibility?: string | null;
           status?: string;
           meta?: Json | null;
+          instagram?: string | null;
+          tiktok?: string | null;
         };
         Relationships: [];
       };
