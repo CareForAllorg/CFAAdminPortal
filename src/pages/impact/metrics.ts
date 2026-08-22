@@ -43,19 +43,32 @@ export function formatCompactNumber(n: number): string {
 // them.
 const GUARANTEED_CATEGORIES = ['Funds Raised', 'Roads Mapped', 'Buildings Mapped'];
 
+// 'Items Mapped' is a legacy label from an old mapping-submission fallback
+// (see VolunteerPortalCFA's app/api/mapping/time-log/route.ts) that predates
+// the current Buildings Mapped / Roads Mapped split. The dashboard should
+// only ever show those two mapping categories, not this stray leftover one.
+const HIDDEN_CATEGORIES = ['Items Mapped'];
+
+// Category keys match the real primary_impact/secondary_impact values
+// stored on service_logs -- only the label shown on the card should carry
+// the unit, not the key used to look up/aggregate the underlying data.
+const LABEL_OVERRIDES: Record<string, string> = {
+  'Roads Mapped': 'Roads Mapped (KM)',
+};
+
 export function metricList(events: ImpactEvents): Metric[] {
   const list: Metric[] = [
     { key: 'totalmembers', label: 'Total Members', events: events.totalmembers },
     { key: 'totalchapters', label: 'Total Chapters', events: events.totalchapters },
   ];
 
-  const categoryKeys = Object.keys(events.categories);
+  const categoryKeys = Object.keys(events.categories).filter((key) => !HIDDEN_CATEGORIES.includes(key));
   GUARANTEED_CATEGORIES.forEach((key) => {
     if (categoryKeys.indexOf(key) === -1) { categoryKeys.push(key); }
   });
 
   categoryKeys.forEach((category) => {
-    list.push({ key: category, label: category, events: events.categories[category] || [] });
+    list.push({ key: category, label: LABEL_OVERRIDES[category] ?? category, events: events.categories[category] || [] });
   });
 
   return list;
