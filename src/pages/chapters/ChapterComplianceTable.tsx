@@ -133,8 +133,10 @@ export function ChapterComplianceTable({
 
         {openChapter
           ? QUARTERS.map((q) => {
+              // Same fix as api/_lib/compliance.ts: the volunteer portal
+              // stores quarter as "Q1 (Jan - Mar)", not bare "Q1".
               const submitted = openChapter.checkins.find(
-                (c) => c.quarter === q && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
+                (c) => (c.quarter || '').trim().startsWith(q) && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
               );
 
               return (
