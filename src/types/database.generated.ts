@@ -352,7 +352,7 @@ export interface Database {
       resources: {
         Row: {
           id: string;
-          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
           title: string;
           description: string | null;
           link: string | null;
@@ -360,11 +360,13 @@ export interface Database {
           duration: string | null;
           audience: string | null;
           status: 'published' | 'coming-soon';
+          featured: boolean;
+          video_role: string | null;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
           title: string;
           description?: string | null;
           link?: string | null;
@@ -372,11 +374,13 @@ export interface Database {
           duration?: string | null;
           audience?: string | null;
           status?: 'published' | 'coming-soon';
+          featured?: boolean;
+          video_role?: string | null;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          category?: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          category?: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
           title?: string;
           description?: string | null;
           link?: string | null;
@@ -384,6 +388,8 @@ export interface Database {
           duration?: string | null;
           audience?: string | null;
           status?: 'published' | 'coming-soon';
+          featured?: boolean;
+          video_role?: string | null;
           updated_at?: string;
         };
         Relationships: [];

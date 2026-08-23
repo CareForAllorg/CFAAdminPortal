@@ -7,10 +7,11 @@ export interface ResourceGroups {
   Toolkits: Resource[];
   Videos: Resource[];
   Other: Resource[];
+  'Chapter Lead': Resource[];
 }
 
 function groupByCategory(list: Resource[]): ResourceGroups {
-  const groups: ResourceGroups = { Handbooks: [], Toolkits: [], Videos: [], Other: [] };
+  const groups: ResourceGroups = { Handbooks: [], Toolkits: [], Videos: [], Other: [], 'Chapter Lead': [] };
   list.forEach((r) => {
     (groups[r.category] ?? groups.Other).push(r);
   });

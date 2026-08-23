@@ -3,11 +3,11 @@ import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import type { Database } from '../../src/types/database.generated.js';
 
-const RESOURCE_COLUMNS = 'id, category, title, description, link, source_type, duration, audience, status, updated_at';
+const RESOURCE_COLUMNS = 'id, category, title, description, link, source_type, duration, audience, status, featured, video_role, updated_at';
 
 type ResourceUpdate = Database['public']['Tables']['resources']['Update'];
 
-const PATCHABLE_FIELDS = ['title', 'description', 'link', 'status', 'category', 'source_type', 'duration', 'audience'] as const satisfies readonly (keyof ResourceUpdate)[];
+const PATCHABLE_FIELDS = ['title', 'description', 'link', 'status', 'category', 'source_type', 'duration', 'audience', 'featured', 'video_role'] as const satisfies readonly (keyof ResourceUpdate)[];
 
 // Handles /api/resources (list/create) and /api/resources/:id (patch).
 // One PATCH endpoint serves Edit (title/description/link), Hide
@@ -45,6 +45,8 @@ export async function resources(req: VercelRequest, res: VercelResponse, ctx: Re
         duration: req.body.duration ?? null,
         audience: req.body.audience ?? null,
         status,
+        featured: req.body.featured === true,
+        video_role: req.body.video_role ?? null,
       })
       .select(RESOURCE_COLUMNS)
       .single();

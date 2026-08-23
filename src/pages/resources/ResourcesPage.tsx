@@ -119,6 +119,7 @@ export function ResourcesPage() {
     { key: 'Toolkits', icon: 'briefcase', title: 'Project Toolkits' },
     { key: 'Videos', icon: 'video', title: 'Video Tutorials' },
     { key: 'Other', icon: 'dots', title: 'Other' },
+    { key: 'Chapter Lead', icon: 'crown', title: 'Chapter Lead Resources' },
   ];
 
   return (
