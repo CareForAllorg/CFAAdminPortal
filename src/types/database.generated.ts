@@ -178,32 +178,58 @@ export interface Database {
         Row: {
           id: string;
           chapter_name: string;
-          quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          // Real stored values are full labels like "Q1 (Jan - Mar)", not
+          // the bare "Q1" this literal union previously claimed -- that
+          // was never true of live data, just never caught because the
+          // frontend posts through a generic HTTP client, not a typed
+          // supabase-js call.
+          quarter: string;
           activities: string | null;
           member_count: number | null;
           challenges: string | null;
           submitted_at: string | null;
           user_id: string;
+          meeting_helpfulness: number | null;
+          guidance_rating: number | null;
+          understanding_rating: number | null;
+          community_engagement_rating: number | null;
+          total_hours: number | null;
+          structural_changes: string | null;
+          guidelines_compliance: string | null;
         };
         Insert: {
           id?: string;
           chapter_name: string;
-          quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          quarter: string;
           activities?: string | null;
           member_count?: number | null;
           challenges?: string | null;
           submitted_at?: string | null;
           user_id: string;
+          meeting_helpfulness?: number | null;
+          guidance_rating?: number | null;
+          understanding_rating?: number | null;
+          community_engagement_rating?: number | null;
+          total_hours?: number | null;
+          structural_changes?: string | null;
+          guidelines_compliance?: string | null;
         };
         Update: {
           id?: string;
           chapter_name?: string;
-          quarter?: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          quarter?: string;
           activities?: string | null;
           member_count?: number | null;
           challenges?: string | null;
           submitted_at?: string | null;
           user_id?: string;
+          meeting_helpfulness?: number | null;
+          guidance_rating?: number | null;
+          understanding_rating?: number | null;
+          community_engagement_rating?: number | null;
+          total_hours?: number | null;
+          structural_changes?: string | null;
+          guidelines_compliance?: string | null;
         };
         Relationships: [];
       };

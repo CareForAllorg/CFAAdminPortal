@@ -11,6 +11,7 @@ interface ChapterComplianceTableProps {
   onMarkQuarterComplete: (chapterName: string, quarter: Quarter) => void;
   onUnmarkQuarterComplete: (checkinId: string) => void;
   onSetProjectCount: (chapterId: string, value: number | null) => void;
+  removingCheckinId: string | null;
 }
 
 const QUARTERS: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -27,12 +28,19 @@ const DOT_TITLE: Record<QuarterStatus, string> = {
   pending: 'Not yet due',
 };
 
+// All four Likert questions on the volunteer portal's check-in form use
+// a 1-5 scale (confirmed against the live form itself, not assumed).
+function formatRating(value: number | null): string {
+  return value != null ? `${value} / 5` : '-';
+}
+
 export function ChapterComplianceTable({
   chapters,
   currentYear,
   onMarkQuarterComplete,
   onUnmarkQuarterComplete,
   onSetProjectCount,
+  removingCheckinId,
 }: ChapterComplianceTableProps) {
   const [openChapterId, setOpenChapterId] = useState<string | null>(null);
   const [projectCountInput, setProjectCountInput] = useState('');
@@ -147,8 +155,13 @@ export function ChapterComplianceTable({
                       {submitted ? ` — Submitted ${formatDate(submitted.submitted_at)}` : ' — Not submitted'}
                     </div>
                     {submitted ? (
-                      <Button variant="danger" className="!text-[11px] !px-3 !py-[5px]" onClick={() => onUnmarkQuarterComplete(submitted.id)}>
-                        Remove
+                      <Button
+                        variant="danger"
+                        className="!text-[11px] !px-3 !py-[5px]"
+                        disabled={removingCheckinId === submitted.id}
+                        onClick={() => onUnmarkQuarterComplete(submitted.id)}
+                      >
+                        {removingCheckinId === submitted.id ? 'Removing…' : 'Remove'}
                       </Button>
                     ) : (
                       <Button variant="outline" className="!text-[11px] !px-3 !py-[5px]" onClick={() => onMarkQuarterComplete(openChapter.name, q)}>
@@ -157,10 +170,17 @@ export function ChapterComplianceTable({
                     )}
                   </div>
                   {submitted ? (
-                    <div className="text-[14px] text-text">
-                      <strong>Member Count:</strong> {submitted.member_count != null ? submitted.member_count : '-'}<br />
-                      <strong>Activities:</strong> {submitted.activities || '-'}<br />
-                      <strong>Challenges:</strong> {submitted.challenges || '-'}
+                    <div className="text-[14px] text-text flex flex-col gap-[3px]">
+                      <div><strong>Member Count:</strong> {submitted.member_count != null ? submitted.member_count : '-'}</div>
+                      <div><strong>Total Hours:</strong> {submitted.total_hours != null ? submitted.total_hours : '-'}</div>
+                      <div><strong>Activities:</strong> {submitted.activities || '-'}</div>
+                      <div><strong>Meeting Helpfulness</strong> (Not Helpful at All → Extremely Helpful): {formatRating(submitted.meeting_helpfulness)}</div>
+                      <div><strong>Guidance &amp; Resources Provided</strong> (Strongly Disagree → Strongly Agree): {formatRating(submitted.guidance_rating)}</div>
+                      <div><strong>Increased Understanding of Healthcare Challenges</strong> (Strongly Disagree → Strongly Agree): {formatRating(submitted.understanding_rating)}</div>
+                      <div><strong>Meaningful Community Engagement</strong> (Strongly Disagree → Strongly Agree): {formatRating(submitted.community_engagement_rating)}</div>
+                      <div><strong>Community Guidelines Compliance:</strong> {submitted.guidelines_compliance || '-'}</div>
+                      <div><strong>Structural Changes:</strong> {submitted.structural_changes || '-'}</div>
+                      <div><strong>Challenges:</strong> {submitted.challenges || '-'}</div>
                     </div>
                   ) : null}
                 </div>
