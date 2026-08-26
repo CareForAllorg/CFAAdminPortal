@@ -132,6 +132,29 @@ describe('mapathonDates PATCH', () => {
   });
 });
 
+describe('mapathonDates DELETE', () => {
+  it('reverses previously credited hours/buildings/roads before deleting the date', async () => {
+    const res = mockRes();
+    const ctx = mockCtx({
+      selectByTable: {
+        service_logs: { data: [{ user_id: 'user-1', impact_magnitude: 10, secondary_impact_magnitude: 5 }] },
+        profiles: { data: { buildings_mapped: 30, km_roads_mapped: 13 } },
+      },
+    });
+    await mapathonDates(req('DELETE'), res, ctx, 'date-1');
+
+    expect(res._status).toBe(204);
+    const calls = (ctx.supabase as unknown as MockSupabase).calls;
+    // service_logs rows for this date get deleted (reversal)...
+    expect(calls.eqs).toContainEqual(['mapathon_date_id', 'date-1']);
+    // ...and the credited member's profile totals get the delta subtracted back out.
+    const updates = calls.updates as unknown as Array<[Record<string, unknown>]>;
+    expect(updates[updates.length - 1][0]).toEqual({ buildings_mapped: 20, km_roads_mapped: 8 });
+    // ...then the mapathon_dates row itself is deleted.
+    expect(calls.eqs).toContainEqual(['id', 'date-1']);
+  });
+});
+
 describe('mapathonDates method handling', () => {
   it('returns 405 for unsupported methods on the collection', async () => {
     const res = mockRes();

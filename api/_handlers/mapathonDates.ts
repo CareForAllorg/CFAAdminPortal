@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import type { Database } from '../../src/types/database.generated.js';
+import { applyProfileDeltas, reverseMapathonCredits } from '../_lib/mapathonCredits.js';
 
 const MAPATHON_DATE_COLUMNS = 'id, event_date, hours, label, created_at, total_buildings_mapped, total_km_roads_mapped, bonus_service_hours, attendance_list_path';
 
@@ -102,6 +103,14 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   }
 
   if (req.method === 'DELETE') {
+    // Reverse whatever this date's attendance upload credited before
+    // deleting it -- the FK is ON DELETE SET NULL (a record of the hours
+    // having existed stays, just orphaned from this date), so without this
+    // the deleted date's hours and buildings/roads share would stay
+    // credited on every attendee's profile forever.
+    const deltaByUser = await reverseMapathonCredits(supabase, id);
+    await applyProfileDeltas(supabase, deltaByUser);
+
     const { error } = await supabase.from('mapathon_dates').delete().eq('id', id);
     if (error) { throw error; }
     sendJson(res, 204, null);

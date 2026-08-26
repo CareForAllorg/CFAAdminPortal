@@ -96,6 +96,7 @@ export function ImpactPage() {
         onClose={() => setDateEditItem(null)}
         onSave={(payload) => updateDate(dateEditItem!.id, payload)}
         onUploadAttendance={uploadAttendance}
+        onUpdateAttendance={(id, path) => updateDate(id, { attendance_list_path: path })}
       />
       <MapathonDateEditModal
         open={dateAddOpen}
@@ -103,6 +104,7 @@ export function ImpactPage() {
         onClose={() => setDateAddOpen(false)}
         onSave={createDate}
         onUploadAttendance={uploadAttendance}
+        onUpdateAttendance={(id, path) => updateDate(id, { attendance_list_path: path })}
       />
       <ConfirmModal
         open={deleteDateItem !== null}

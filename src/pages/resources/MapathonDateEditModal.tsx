@@ -8,14 +8,18 @@ interface MapathonDateEditModalProps {
   open: boolean;
   item: MapathonDate | null;
   onClose: () => void;
-  onSave: (payload: MapathonDatePayload) => Promise<boolean>;
-  onUploadAttendance: (dateId: string, file: File) => Promise<{ path: string; attendeeCount: number } | null>;
+  onSave: (payload: MapathonDatePayload) => Promise<MapathonDate | null>;
+  onUploadAttendance: (dateId: string, file: File) => Promise<{ path: string; attendeeCount: number; matchedCount: number; unmatchedCount: number } | null>;
+  // Only used for a brand-new date: onSave already created the row, so a
+  // second call to it would create a duplicate instead of attaching the
+  // attendance path to the row that now exists.
+  onUpdateAttendance: (dateId: string, attendanceListPath: string | null) => Promise<MapathonDate | null>;
 }
 
 const inputClass = 'w-full px-[13px] py-[9px] border border-border rounded-lg text-[13px] text-text bg-bg outline-none font-sans transition-colors duration-150 focus:border-brand focus:bg-white';
 const labelClass = 'block text-[11px] font-bold text-muted uppercase tracking-[0.05em] mb-[6px]';
 
-export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAttendance }: MapathonDateEditModalProps) {
+export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAttendance, onUpdateAttendance }: MapathonDateEditModalProps) {
   const [eventDate, setEventDate] = useState('');
   const [hours, setHours] = useState('');
   const [label, setLabel] = useState('');
@@ -24,7 +28,12 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
   const [bonusHours, setBonusHours] = useState('0');
   const [attendancePath, setAttendancePath] = useState<string | null>(null);
   const [attendeeCount, setAttendeeCount] = useState<number | null>(null);
+  const [unmatchedCount, setUnmatchedCount] = useState<number | null>(null);
   const [attendanceFileName, setAttendanceFileName] = useState<string | null>(null);
+  // A file picked before a brand-new date has been saved (no id yet, so it
+  // can't be uploaded immediately) -- held here and actually uploaded once
+  // handleSave() gets an id back.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +47,9 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
     setBonusHours(item ? String(item.bonus_service_hours) : '0');
     setAttendancePath(item?.attendance_list_path ?? null);
     setAttendeeCount(null);
+    setUnmatchedCount(null);
     setAttendanceFileName(null);
+    setPendingFile(null);
   }, [item, open]);
 
   async function handleSave() {
@@ -61,20 +72,37 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
       total_km_roads_mapped: Number(totalKm || 0),
       bonus_service_hours: Number(bonusHours || 0),
     };
-    // A new date has no id yet, so the upload widget is disabled for it --
-    // only carry the attendance path through on edits (null clears it).
+    // A new date has no id yet, so any attendance file gets held in
+    // pendingFile and uploaded below once we have one -- only carry the
+    // attendance path directly on edits (null clears it).
     if (item) { payload.attendance_list_path = attendancePath; }
 
     setSaving(true);
-    const ok = await onSave(payload);
+    const saved = await onSave(payload);
+    if (!saved) { setSaving(false); return; }
+
+    if (!item && pendingFile) {
+      setUploading(true);
+      const result = await onUploadAttendance(saved.id, pendingFile);
+      if (result) {
+        await onUpdateAttendance(saved.id, result.path);
+        if (result.unmatchedCount > 0) {
+          toast.warning(`${result.matchedCount} attendee(s) credited`, {
+            description: `${result.unmatchedCount} row(s) had no matching account and were skipped.`,
+          });
+        }
+      }
+      setUploading(false);
+    }
+
     setSaving(false);
-    if (ok) { onClose(); }
+    onClose();
   }
 
   async function handleAttendanceFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !item) { return; }
+    if (!file) { return; }
 
     if (file.size > MAX_ATTENDANCE_BYTES) {
       toast.error('File too large', { description: 'Please choose a CSV 5MB or smaller.' });
@@ -85,13 +113,27 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
       return;
     }
 
+    // No id yet for a brand-new date -- hold the file and upload it once
+    // handleSave() creates the row and gets one back.
+    if (!item) {
+      setPendingFile(file);
+      setAttendanceFileName(file.name);
+      return;
+    }
+
     setUploading(true);
     const result = await onUploadAttendance(item.id, file);
     setUploading(false);
     if (result) {
       setAttendancePath(result.path);
       setAttendeeCount(result.attendeeCount);
+      setUnmatchedCount(result.unmatchedCount);
       setAttendanceFileName(file.name);
+      if (result.unmatchedCount > 0) {
+        toast.warning(`${result.matchedCount} attendee(s) credited`, {
+          description: `${result.unmatchedCount} row(s) had no matching account and were skipped.`,
+        });
+      }
     }
   }
 
@@ -99,6 +141,7 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
     setAttendancePath(null);
     setAttendeeCount(null);
     setAttendanceFileName(null);
+    setPendingFile(null);
   }
 
   const valid = eventDate && Number(hours) > 0;
@@ -142,14 +185,15 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
           <label className={labelClass}>Attendance List</label>
           <div className="flex items-center gap-[10px] flex-wrap">
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={handleAttendanceFile} className="hidden" />
-            <Button variant="outline" className="!text-[12px] !px-4 !py-2" onClick={() => fileInputRef.current?.click()} disabled={!item || uploading}>
-              {uploading ? 'Uploading…' : attendancePath ? 'Replace List' : 'Upload List'}
+            <Button variant="outline" className="!text-[12px] !px-4 !py-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? 'Uploading…' : attendancePath || pendingFile ? 'Replace List' : 'Upload List'}
             </Button>
-            {attendancePath ? (
+            {attendancePath || pendingFile ? (
               <>
                 <span className="text-[12px] text-muted">
                   {attendanceFileName ?? 'Attendance list attached'}
                   {attendeeCount != null ? ` — ${attendeeCount} attendee${attendeeCount === 1 ? '' : 's'}` : ''}
+                  {unmatchedCount != null && unmatchedCount > 0 ? ` (${unmatchedCount} unmatched)` : ''}
                 </span>
                 <button
                   onClick={handleRemoveAttendance}
@@ -161,10 +205,10 @@ export function MapathonDateEditModal({ open, item, onClose, onSave, onUploadAtt
               </>
             ) : null}
           </div>
-          {!item ? (
-            <div className="text-[11.5px] text-muted mt-[8px]">Save the date first, then upload the attendance list from this date's row.</div>
+          {!item && pendingFile ? (
+            <div className="text-[11.5px] text-muted mt-[8px]">Will be uploaded once you add this date.</div>
           ) : (
-            <div className="text-[11.5px] text-muted mt-[8px]">Upload the sign-in CSV (name/email). It's stored privately and read via a signed link on the published results.</div>
+            <div className="text-[11.5px] text-muted mt-[8px]">Upload the sign-in CSV (name/email). Needs a header row plus at least one attendee row. It's stored privately and read via a signed link on the published results.</div>
           )}
         </div>
 

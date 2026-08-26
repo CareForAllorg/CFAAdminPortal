@@ -283,6 +283,7 @@ export interface Database {
           secondary_impact: string | null;
           secondary_impact_magnitude: number | null;
           proof_path: string | null;
+          mapathon_date_id: string | null;
         };
         Insert: {
           id?: string;
@@ -306,6 +307,7 @@ export interface Database {
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
           proof_path?: string | null;
+          mapathon_date_id?: string | null;
         };
         Update: {
           id?: string;
@@ -329,6 +331,7 @@ export interface Database {
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
           proof_path?: string | null;
+          mapathon_date_id?: string | null;
         };
         Relationships: [
           {

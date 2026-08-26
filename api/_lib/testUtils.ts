@@ -80,6 +80,7 @@ export function mockSupabase(opts: MockSupabaseOptions = {}): MockSupabase {
     in(...args: unknown[]) { calls.ins.push(args); return this; },
     eq(...args: unknown[]) { calls.eqs.push(args); return this; },
     single() { return this; },
+    maybeSingle() { return this; },
   });
 
   const makeTable = (tableName: string) => ({
@@ -90,24 +91,24 @@ export function mockSupabase(opts: MockSupabaseOptions = {}): MockSupabase {
     },
     insert(...args: unknown[]) {
       calls.inserts.push(args);
-      return {
-        select(...sArgs: unknown[]) {
-          calls.selects.push(sArgs);
-          return result(opts.insertData, opts.insertError);
-        },
-      };
+      // Carries data/error at the top level too (not just behind
+      // .select()) -- real supabase-js resolves a bare `insert(rows)` with
+      // no .select() chain directly to { data, error }, which some
+      // handlers (e.g. uploadMapathonAttendance's service_logs insert)
+      // rely on without ever chaining .select().
+      return result(opts.insertData, opts.insertError);
     },
     update(...args: unknown[]) {
       calls.updates.push(args);
       return {
         eq(...eArgs: unknown[]) {
           calls.eqs.push(eArgs);
-          return {
-            select(...sArgs: unknown[]) {
-              calls.selects.push(sArgs);
-              return result(opts.updateData, opts.updateError);
-            },
-          };
+          // Carries data/error at the top level too (not just behind
+          // .select()) -- real supabase-js resolves a bare
+          // `.update(x).eq(...)` with no .select() chain directly to
+          // { data, error }, which some handlers rely on without ever
+          // chaining .select().
+          return result(opts.updateData, opts.updateError);
         },
       };
     },

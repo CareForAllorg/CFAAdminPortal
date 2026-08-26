@@ -2,7 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import { firstQueryValue } from '../_lib/pagination.js';
-import { validateAttendanceCsv } from '../_lib/parseAttendance.js';
+import { parseCsv, validateAttendanceCsv } from '../_lib/parseAttendance.js';
+import { applyProfileDeltas, reverseMapathonCredits } from '../_lib/mapathonCredits.js';
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const MAX_ATTENDANCE_BYTES = 5 * 1024 * 1024;
@@ -81,6 +82,11 @@ export async function uploadMentorAvatar(req: VercelRequest, res: VercelResponse
 // the attendee names/emails never land in a public bucket. dateId is
 // optional so a re-upload replaces the same `${dateId}/attendance.csv`
 // path instead of stacking stale copies.
+//
+// Also credits each matched attendee's own service hours directly (see the
+// mapathon_date_id column) -- the CSV is the org's own verification, so
+// these land as 'approved' immediately rather than sitting in the normal
+// pending-review queue.
 export async function uploadMapathonAttendance(req: VercelRequest, res: VercelResponse, ctx: RequestContext) {
   if (req.method !== 'POST') {
     methodNotAllowed(res, ['POST']);
@@ -107,5 +113,92 @@ export async function uploadMapathonAttendance(req: VercelRequest, res: VercelRe
     .upload(path, buffer, { contentType, upsert: true });
   if (uploadError) { throw uploadError; }
 
-  sendJson(res, 200, { path, attendeeCount: validation.attendeeCount });
+  // Credit each listed attendee's own service hours (and their even share
+  // of the date's buildings/roads totals) directly -- previously this
+  // upload only stored the file as proof and fed the mapathon's aggregate
+  // totals into Impact Measurables; no individual member ever actually got
+  // hours or a buildings/roads count credited from being on the list, only
+  // from separately self-submitting through their own portal.
+  let matchedCount = 0;
+  let unmatchedCount = 0;
+  if (dateId) {
+    const { data: mapathonDate, error: dateError } = await ctx.supabase
+      .from('mapathon_dates')
+      .select('hours, event_date, label, total_buildings_mapped, total_km_roads_mapped')
+      .eq('id', dateId)
+      .maybeSingle();
+    if (dateError) { throw dateError; }
+
+    if (mapathonDate) {
+      const rows = parseCsv(buffer.toString('utf8'));
+      const [header, ...dataRows] = rows;
+      const emailCol = header.findIndex((h) => h.trim().toLowerCase() === 'email');
+
+      if (emailCol !== -1) {
+        const csvEmails = dataRows
+          .map((r) => (r[emailCol] ?? '').trim())
+          .filter((e) => e.length > 0);
+
+        // Case-insensitive match against every user rather than one .in()
+        // call per email -- users.email isn't stored consistently
+        // lowercased, and a large attendance list would otherwise risk the
+        // same silent large-.in()-call failure hit elsewhere in this repo.
+        const { data: allUsers, error: usersError } = await ctx.supabase.from('users').select('id, name, email');
+        if (usersError) { throw usersError; }
+        const byLowerEmail = new Map((allUsers ?? []).filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u]));
+
+        const matched = csvEmails
+          .map((e) => byLowerEmail.get(e.toLowerCase()))
+          .filter((u): u is NonNullable<typeof u> => !!u);
+        matchedCount = matched.length;
+        unmatchedCount = csvEmails.length - matchedCount;
+
+        // No per-attendee breakdown exists, only the date's own aggregate
+        // totals -- split evenly across everyone credited from this list.
+        const buildingsShare = matched.length > 0 ? Number(mapathonDate.total_buildings_mapped) / matched.length : 0;
+        const kmShare = matched.length > 0 ? Number(mapathonDate.total_km_roads_mapped) / matched.length : 0;
+
+        // Reverse whatever this date previously credited (if anything)
+        // before replacing it, so a re-upload's net effect on each
+        // member's profile totals is correct instead of double-crediting
+        // them.
+        const netDeltaByUser = await reverseMapathonCredits(ctx.supabase, dateId);
+        for (const u of matched) {
+          const d = netDeltaByUser.get(u.id) ?? { buildings: 0, km: 0 };
+          d.buildings += buildingsShare;
+          d.km += kmShare;
+          netDeltaByUser.set(u.id, d);
+        }
+
+        if (matched.length > 0) {
+          const description = `Mapathon attendance${mapathonDate.label ? `: ${mapathonDate.label}` : ''}`;
+          const { error: insertError } = await ctx.supabase.from('service_logs').insert(
+            matched.map((u) => ({
+              user_id: u.id,
+              name: u.name,
+              email: u.email,
+              activity_type: 'Mapathon',
+              hours: mapathonDate.hours,
+              status: 'approved' as const,
+              description,
+              submitted_at: mapathonDate.event_date,
+              mapathon_date_id: dateId,
+              primary_impact: buildingsShare > 0 ? 'Buildings Mapped' : null,
+              impact_magnitude: buildingsShare > 0 ? buildingsShare : null,
+              secondary_impact: kmShare > 0 ? 'Roads Mapped' : null,
+              secondary_impact_magnitude: kmShare > 0 ? kmShare : null,
+            }))
+          );
+          if (insertError) { throw insertError; }
+        }
+
+        // Additive across mapathons over time, not a replace (which is
+        // only correct for the self-submission flow's "here's my current
+        // running total" semantics, not an event-based credit).
+        await applyProfileDeltas(ctx.supabase, netDeltaByUser);
+      }
+    }
+  }
+
+  sendJson(res, 200, { path, attendeeCount: validation.attendeeCount, matchedCount, unmatchedCount });
 }

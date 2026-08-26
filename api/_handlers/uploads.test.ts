@@ -68,10 +68,65 @@ describe('uploadMapathonAttendance', () => {
     );
 
     expect(res._status).toBe(200);
-    expect(res._body).toEqual({ path: 'date-1/attendance.csv', attendeeCount: 2 });
+    // No mapathon_dates row found for 'date-1' in this mock (selectData is
+    // unset) -- crediting is skipped entirely rather than erroring, same as
+    // a real not-found date would behave via maybeSingle().
+    expect(res._body).toEqual({ path: 'date-1/attendance.csv', attendeeCount: 2, matchedCount: 0, unmatchedCount: 0 });
     const calls = (ctx.supabase as unknown as MockSupabase).calls;
     expect(calls.storageBuckets).toEqual(['mapathon-attendance']);
     expect(calls.uploads[0][0]).toBe('date-1/attendance.csv');
+  });
+
+  it('credits matched attendees, skips unmatched rows, and replaces prior credits for this date', async () => {
+    const res = mockRes();
+    const ctx = mockCtx({
+      selectByTable: {
+        mapathon_dates: {
+          data: { hours: 2, event_date: '2026-08-20', label: 'August Mapathon', total_buildings_mapped: 10, total_km_roads_mapped: 5 },
+        },
+        users: { data: [{ id: 'user-1', name: 'Alice', email: 'a@x.com' }] },
+        profiles: { data: { buildings_mapped: 20, km_roads_mapped: 8 } },
+      },
+    });
+    await uploadMapathonAttendance(
+      req('POST', {
+        dataUrl: `data:text/csv;base64,${Buffer.from(VALID_CSV).toString('base64')}`,
+        dateId: 'date-1',
+      }),
+      res,
+      ctx,
+    );
+
+    expect(res._status).toBe(200);
+    // Alice matches a real user (a@x.com); Bob doesn't.
+    expect(res._body).toEqual({ path: 'date-1/attendance.csv', attendeeCount: 2, matchedCount: 1, unmatchedCount: 1 });
+
+    const calls = (ctx.supabase as unknown as MockSupabase).calls;
+    expect(calls.deletes.length).toBeGreaterThan(0);
+    expect(calls.eqs).toContainEqual(['mapathon_date_id', 'date-1']);
+    const insertedRows = calls.inserts[calls.inserts.length - 1][0] as Array<Record<string, unknown>>;
+    expect(insertedRows).toEqual([
+      {
+        user_id: 'user-1',
+        name: 'Alice',
+        email: 'a@x.com',
+        activity_type: 'Mapathon',
+        hours: 2,
+        status: 'approved',
+        description: 'Mapathon attendance: August Mapathon',
+        submitted_at: '2026-08-20',
+        mapathon_date_id: 'date-1',
+        primary_impact: 'Buildings Mapped',
+        impact_magnitude: 10,
+        secondary_impact: 'Roads Mapped',
+        secondary_impact_magnitude: 5,
+      },
+    ]);
+
+    // 10 buildings / 5 roads split across the 1 matched attendee, added on
+    // top of Alice's existing 20/8 baseline.
+    const updates = calls.updates as unknown as Array<[Record<string, unknown>]>;
+    expect(updates[updates.length - 1][0]).toEqual({ buildings_mapped: 30, km_roads_mapped: 13 });
   });
 
   it('uses a timestamped path when dateId is omitted', async () => {

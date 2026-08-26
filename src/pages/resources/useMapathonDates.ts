@@ -47,16 +47,19 @@ export function useMapathonDates() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function createDate(payload: MapathonDatePayload) {
-    const ok = await mutateOrToast(api.post('/mapathon-dates', payload), 'Adding mapathon date');
-    if (ok) { await load(); }
-    return ok;
+  // Returns the created/updated row (not just a boolean) so the edit modal
+  // can grab the new row's id -- needed to upload an attendance file picked
+  // before a brand-new date had an id yet.
+  async function createDate(payload: MapathonDatePayload): Promise<MapathonDate | null> {
+    const result = await apiOrToast<{ data: MapathonDate } | null>(api.post('/mapathon-dates', payload), 'Adding mapathon date', null);
+    if (result) { await load(); }
+    return result?.data ?? null;
   }
 
-  async function updateDate(id: string, payload: MapathonDatePayload) {
-    const ok = await mutateOrToast(api.patch(`/mapathon-dates/${id}`, payload), 'Updating mapathon date');
-    if (ok) { await load(); }
-    return ok;
+  async function updateDate(id: string, payload: MapathonDatePayload): Promise<MapathonDate | null> {
+    const result = await apiOrToast<{ data: MapathonDate } | null>(api.patch(`/mapathon-dates/${id}`, payload), 'Updating mapathon date', null);
+    if (result) { await load(); }
+    return result?.data ?? null;
   }
 
   async function deleteDate(id: string) {
@@ -66,13 +69,14 @@ export function useMapathonDates() {
   }
 
   // Uploads the attendance CSV to the private mapathon-attendance bucket
-  // and returns the { path, attendeeCount } the publish form then PATCHes
-  // onto the date (see api/_handlers/uploads.ts). Re-uploading the same
-  // date replaces the stored file via upsert.
-  async function uploadAttendance(dateId: string, file: File): Promise<{ path: string; attendeeCount: number } | null> {
+  // and returns the { path, attendeeCount, matchedCount, unmatchedCount }
+  // the publish form then PATCHes the path onto the date (see
+  // api/_handlers/uploads.ts). Re-uploading the same date replaces both
+  // the stored file and the hours it already credited.
+  async function uploadAttendance(dateId: string, file: File): Promise<{ path: string; attendeeCount: number; matchedCount: number; unmatchedCount: number } | null> {
     const dataUrl = await readCsvAsDataUrl(file);
-    return apiOrToast<{ path: string; attendeeCount: number } | null>(
-      api.post<{ path: string; attendeeCount: number }>('/uploads/mapathon-attendance', { dateId, dataUrl }),
+    return apiOrToast<{ path: string; attendeeCount: number; matchedCount: number; unmatchedCount: number } | null>(
+      api.post('/uploads/mapathon-attendance', { dateId, dataUrl }),
       'Uploading attendance list',
       null
     );
