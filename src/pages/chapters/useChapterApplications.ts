@@ -14,6 +14,16 @@ export interface ChapterApplicationMeta {
   applicant_name?: string;
   applicant_email?: string;
   applied_at?: string;
+  // Two different chapter-creation paths write this meta: the "Start a
+  // Chapter" application modal (an existing member, from Chapter Hub)
+  // writes the application_* freeform strings above; new-member onboarding
+  // as a chapter lead writes only these parsed fields instead, with no
+  // application_advisor_info/application_cofounder_info at all -- both
+  // need to be read, not just the first.
+  advisor_name?: string;
+  advisor_email?: string;
+  co_lead_name?: string;
+  co_leads?: { name?: string; email?: string }[];
 }
 
 export interface ChapterApplication {

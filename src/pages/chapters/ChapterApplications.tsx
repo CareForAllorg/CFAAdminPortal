@@ -47,6 +47,12 @@ export function ChapterApplications({ applications, loading, onApprove, onReject
           {applications.map((app) => {
             const m = app.meta;
             const location = [m.application_city, m.application_state || m.application_country].filter(Boolean).join(', ');
+            const advisor = m.application_advisor_info || [m.advisor_name, m.advisor_email].filter(Boolean).join(' — ') || undefined;
+            const coLeads = m.application_cofounder === 'yes'
+              ? (m.application_cofounder_info || 'Yes')
+              : (m.co_leads?.length
+                  ? m.co_leads.map((cl) => [cl.name, cl.email].filter(Boolean).join(' — ')).join(', ')
+                  : m.co_lead_name) || undefined;
             return (
               <div key={app.id} className="border border-border rounded-[10px] p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -64,12 +70,13 @@ export function ChapterApplications({ applications, loading, onApprove, onReject
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <Field label="Chapter Name" value={app.name} />
                   <Field label="Applicant" value={[m.applicant_name, m.applicant_email].filter(Boolean).join(' — ')} />
                   <Field label="School / Community" value={m.application_school_name} />
                   <Field label="Location" value={location || undefined} />
-                  <Field label="Co-Founder" value={m.application_cofounder === 'yes' ? (m.application_cofounder_info || 'Yes') : undefined} />
+                  <Field label="Reported Chapter Advisor" value={advisor} />
+                  <Field label="Reported Chapter Co-Leads" value={coLeads} />
                   <Field label="Additional Member" value={m.application_additional_member_info} />
-                  <Field label="Advisor" value={m.application_advisor_info} />
                 </div>
               </div>
             );
