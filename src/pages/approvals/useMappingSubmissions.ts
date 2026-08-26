@@ -15,6 +15,7 @@ export interface MappingSubmissionRow {
   displayChapter: string;
   buildings: number | null;
   roadsKm: number | null;
+  proofPath: string | null;
 }
 
 interface ServiceLogApiRow {
@@ -30,6 +31,7 @@ interface ServiceLogApiRow {
   impact_magnitude: number | null;
   secondary_impact: string | null;
   secondary_impact_magnitude: number | null;
+  proof_path: string | null;
   profiles: EmbeddedProfile | null;
 }
 
@@ -84,6 +86,7 @@ export function useMappingSubmissions(onMutated: () => void) {
         displayChapter: display.chapter,
         buildings,
         roadsKm,
+        proofPath: row.proof_path,
       };
     }));
     setLoading(false);

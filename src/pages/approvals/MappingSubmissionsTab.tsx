@@ -9,24 +9,10 @@ import { formatHours } from '../../utils/formatHours';
 import { useMappingSubmissions, type MappingSubmissionRow } from './useMappingSubmissions';
 import { useMapathonSubmissions, type MapathonSubmissionRow } from './useMapathonSubmissions';
 import { useMapathonReports } from './useMapathonReports';
-import { api } from '../../lib/apiClient';
+import { ProofPhoto, ProofLink } from './ProofPhoto';
 
 interface MappingSubmissionsTabProps {
   onMutated: () => void;
-}
-
-async function viewProofPhoto(path: string) {
-  const result = await api.get<{ url: string }>(`/uploads/signed-url?path=${encodeURIComponent(path)}`);
-  if (result.url) { window.open(result.url, '_blank', 'noopener,noreferrer'); }
-}
-
-function ProofLink({ path }: { path: string | null }) {
-  if (!path) { return <span className="text-muted">-</span>; }
-  return (
-    <button onClick={() => viewProofPhoto(path)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">
-      View Photo
-    </button>
-  );
 }
 
 export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps) {
@@ -108,6 +94,10 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Submitted</div>
               <div className="text-[14px] text-text font-semibold">{formatDate(previewRow.submitted_at, '')}</div>
             </div>
+            <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Proof — Compare Against HOTOSM Contributions</div>
+              <div className="mt-[4px]"><ProofPhoto path={previewRow.proofPath} /></div>
+            </div>
             <div className="flex flex-col gap-[3px] py-[11px] last:border-b-0">
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Description</div>
               <div className="text-[14px] text-text font-normal">{previewRow.description || '-'}</div>
@@ -179,8 +169,8 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
               <div className="text-[14px] text-text font-semibold">{formatDate(previewMapathonRow.submitted_at, '')}</div>
             </div>
             <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
-              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Proof</div>
-              <div className="text-[14px] text-text font-semibold"><ProofLink path={previewMapathonRow.proofPath} /></div>
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Proof — Compare Against HOTOSM Contributions</div>
+              <div className="mt-[4px]"><ProofPhoto path={previewMapathonRow.proofPath} /></div>
             </div>
             <div className="flex flex-col gap-[3px] py-[11px] last:border-b-0">
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Description</div>

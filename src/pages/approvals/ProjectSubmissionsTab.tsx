@@ -7,6 +7,7 @@ import { MemberProfileModal } from '../../components/MemberProfileModal';
 import { formatDate } from '../../utils/formatDate';
 import { formatHours } from '../../utils/formatHours';
 import { useSubmissions, type SubmissionRow } from './useSubmissions';
+import { ProofPhoto } from './ProofPhoto';
 
 interface ProjectSubmissionsTabProps {
   onMutated: () => void;
@@ -72,6 +73,10 @@ export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps)
             <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Submitted</div>
               <div className="text-[14px] text-text font-semibold">{formatDate(previewRow.submitted_at, '')}</div>
+            </div>
+            <div className="flex flex-col gap-[3px] py-[11px] border-b border-border">
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Proof</div>
+              <div className="mt-[4px]"><ProofPhoto path={previewRow.proof_path} /></div>
             </div>
             <div className="flex flex-col gap-[3px] py-[11px] last:border-b-0">
               <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Description</div>

@@ -12,6 +12,7 @@ export interface SubmissionRow {
   hours: number;
   submitted_at: string;
   description: string | null;
+  proof_path: string | null;
   displayName: string;
   displayChapter: string;
 }
@@ -25,6 +26,7 @@ interface ServiceLogApiRow {
   hours: number;
   submitted_at: string;
   description: string | null;
+  proof_path: string | null;
   profiles: EmbeddedProfile | null;
 }
 

@@ -23,8 +23,12 @@ export async function uploadsSignedUrl(req: VercelRequest, res: VercelResponse, 
     return;
   }
 
-  const path = firstQueryValue(req, 'path');
-  if (!path) { badRequest(res, 'path is required'); return; }
+  // Named filePath, not path -- every request already gets rewritten to
+  // /api/handler?path=<route-segments> (see handler.ts), so a caller-
+  // supplied ?path=... here collides with and overwrites that, breaking
+  // routing entirely instead of just failing to find this storage path.
+  const path = firstQueryValue(req, 'filePath');
+  if (!path) { badRequest(res, 'filePath is required'); return; }
 
   const { data, error } = await ctx.supabase.storage.from('proof-uploads').createSignedUrl(path, 300);
   if (error) { throw error; }
