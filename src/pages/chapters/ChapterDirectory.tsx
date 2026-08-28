@@ -36,7 +36,7 @@ export function ChapterDirectory({ chapters, searchQuery }: ChapterDirectoryProp
             <div className="text-[11.5px] text-muted">—</div>
             <div className="text-[11.5px] text-muted">{ch.lead}</div>
             <div className="text-[11.5px] text-muted">{ch.memberCount}</div>
-            <div className="text-[11.5px] text-muted">—</div>
+            <div className="text-[11.5px] text-muted">{ch.onboardingChecklist.filter(Boolean).length} / {ch.onboardingChecklist.length}</div>
             <div className="text-[11.5px] text-muted">{formatDate(ch.createdAt)}</div>
           </div>
         ))}

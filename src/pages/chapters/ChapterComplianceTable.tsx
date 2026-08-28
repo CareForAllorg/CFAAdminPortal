@@ -54,17 +54,18 @@ export function ChapterComplianceTable({
 
   return (
     <>
-      <div className="grid grid-cols-[1.4fr_1.4fr_1.2fr_1.2fr_1fr] gap-3 items-center py-[14px] border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
+      <div className="grid grid-cols-[1.3fr_1.2fr_1fr_1fr_1fr_1fr] gap-3 items-center py-[14px] border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
         <div>Chapter</div>
         <div>Chapter Lead</div>
         <div>Projects (2+/yr)</div>
         <div>Quarterly Check-Ins</div>
+        <div>Onboarding Video</div>
         <div>Status</div>
       </div>
 
       <div>
         {sorted.map((ch) => (
-          <div key={ch.id} className="grid grid-cols-[1.4fr_1.4fr_1.2fr_1.2fr_1fr] gap-3 items-center py-[14px] border-b border-border last:border-b-0">
+          <div key={ch.id} className="grid grid-cols-[1.3fr_1.2fr_1fr_1fr_1fr_1fr] gap-3 items-center py-[14px] border-b border-border last:border-b-0">
             <div className="text-[13px] font-semibold text-text">{ch.name}</div>
             <div className="text-[11.5px] text-muted">{ch.lead}</div>
 
@@ -86,6 +87,11 @@ export function ChapterComplianceTable({
                   Q{i + 1}
                 </div>
               ))}
+            </div>
+            <div title="Self-reported by the chapter lead in their Onboarding Checklist -- not verified watch tracking">
+              <StatusPill variant={ch.onboardingChecklist[0] ? 'success' : 'neutral'}>
+                {ch.onboardingChecklist[0] ? 'Watched' : 'Not yet'}
+              </StatusPill>
             </div>
             <div>
               <StatusPill variant={ch.compliant ? 'success' : 'danger'}>

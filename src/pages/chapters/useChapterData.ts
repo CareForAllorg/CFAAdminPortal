@@ -16,6 +16,7 @@ export interface EnrichedChapter {
   quarterStatuses: QuarterStatus[];
   checkins: ChapterCheckin[];
   compliant: boolean;
+  onboardingChecklist: boolean[];
 }
 
 interface EnrichedChaptersResponse {

@@ -27,6 +27,11 @@ export interface EnrichedChapter {
   quarterStatuses: QuarterStatus[];
   checkins: ChapterCheckinRow[];
   compliant: boolean;
+  // Self-reported by the chapter lead in the Volunteer Portal's Onboarding
+  // Checklist (chapters.meta.onboarding_checklist) -- three items in a
+  // fixed order (Watch Onboarding Video, Draft Constitution & Set Up,
+  // Add Prospective Members), not verified completion of any of them.
+  onboardingChecklist: boolean[];
 }
 
 export interface ChapterComplianceResult {
@@ -47,7 +52,7 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
   const currentYear = yearParam ? Number(yearParam) : new Date().getFullYear();
 
   const [chaptersRes, profilesRes, checkinsRes, projectLogsRes, deadlinesRes] = await Promise.all([
-    supabase.from('chapters').select('id, name, created_at, project_count_override').order('name'),
+    supabase.from('chapters').select('id, name, created_at, project_count_override, meta').order('name'),
     supabase.from('profiles').select('id, first_name, last_name, chapter_id, role'),
     supabase.from('chapter_checkins')
       .select('id, chapter_name, quarter, activities, member_count, challenges, submitted_at, meeting_helpfulness, guidance_rating, understanding_rating, community_engagement_rating, total_hours, structural_changes, guidelines_compliance')
@@ -137,6 +142,7 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
       quarterStatuses,
       checkins: chapterCheckins,
       compliant: projectCount >= 2 && allCheckinsIn,
+      onboardingChecklist: (ch.meta as { onboarding_checklist?: boolean[] } | null)?.onboarding_checklist ?? [false, false, false],
     };
   });
 

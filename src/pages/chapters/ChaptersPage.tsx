@@ -65,7 +65,7 @@ export function ChaptersPage() {
           <SearchBar value={search} onChange={setSearch} placeholder="Search chapters..." className="w-[220px]" />
         </div>
         <div className="text-[12px] text-muted mb-4 leading-[1.5]">
-          Region, Lead, and Onboarding Steps aren't tracked in the database yet -- shown as — until that data exists.
+          Region isn't tracked in the database yet -- shown as — until that data exists. Onboarding Steps reflects the chapter lead's self-reported progress in their own Onboarding Checklist.
         </div>
         <ChapterDirectory chapters={enriched} searchQuery={search} />
       </Card>
