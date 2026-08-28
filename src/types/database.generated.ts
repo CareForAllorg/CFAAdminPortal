@@ -426,6 +426,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      resource_category_settings: {
+        Row: {
+          category: string;
+          hidden: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          hidden?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          hidden?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       // Drives the Project Directory carousel on the member-facing app's
       // Mapping page (see VolunteerPortalCFA's app/api/mapping/projects).
       mapping_projects: {

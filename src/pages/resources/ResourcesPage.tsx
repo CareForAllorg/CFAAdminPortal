@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { formatDate } from '../../utils/formatDate';
 import { useResources, type ResourceGroups } from './useResources';
+import { useResourceCategorySettings } from './useResourceCategorySettings';
 import { useMappingProjects, type MappingProject } from './useMappingProjects';
 import { ResourcePreviewModal } from './ResourcePreviewModal';
 import { ResourceEditModal } from './ResourceEditModal';
@@ -26,6 +27,8 @@ interface ResourceSectionProps {
   icon: string;
   title: string;
   items: Resource[];
+  isHidden: boolean;
+  onToggleHidden: () => void;
   onPreview: (item: Resource) => void;
   onEdit: (item: Resource) => void;
   onHide: (item: Resource) => void;
@@ -34,7 +37,7 @@ interface ResourceSectionProps {
   onReorder: (orderedIds: string[]) => void;
 }
 
-function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish, onDelete, onReorder }: ResourceSectionProps) {
+function ResourceSection({ icon, title, items, isHidden, onToggleHidden, onPreview, onEdit, onHide, onPublish, onDelete, onReorder }: ResourceSectionProps) {
   // Local copy so a drag visibly reorders the list as you drag over other
   // rows (standard sortable-list feel), independent of the server round
   // trip that only actually happens once on drop -- reset whenever the
@@ -63,8 +66,21 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
 
   return (
     <>
-      <div className="font-heading text-[16px] text-text tracking-[0.01em] mb-3 flex items-center gap-[9px]">
-        <i className={`ti ti-${icon}`} /> {title}
+      <div className="flex items-center justify-between flex-wrap gap-[10px] mb-3">
+        <div className="font-heading text-[16px] text-text tracking-[0.01em] flex items-center gap-[9px]">
+          <i className={`ti ti-${icon}`} /> {title}
+          {isHidden && (
+            <span className="text-[10px] font-bold px-[9px] py-[2px] rounded-full uppercase tracking-[0.03em] bg-bg text-muted border border-border">
+              Hidden from members
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onToggleHidden}
+          className={`text-[12px] font-bold bg-none border-none cursor-pointer font-sans hover:underline ${isHidden ? 'text-brand' : 'text-accent'}`}
+        >
+          {isHidden ? 'Show Section' : 'Hide Section'}
+        </button>
       </div>
       <div className="flex flex-col gap-[10px] mb-[26px] last:mb-0">
         {localItems.length === 0 ? (
@@ -120,6 +136,7 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
 
 export function ResourcesPage() {
   const { groups, createResource, updateResource, deleteResource, reorderResources } = useResources();
+  const { hiddenCategories, setCategoryHidden } = useResourceCategorySettings();
   const [previewItem, setPreviewItem] = useState<Resource | null>(null);
   const [editItem, setEditItem] = useState<Resource | null>(null);
   const [deleteItem, setDeleteItem] = useState<Resource | null>(null);
@@ -179,6 +196,8 @@ export function ResourcesPage() {
             icon={s.icon}
             title={s.title}
             items={groups[s.key]}
+            isHidden={hiddenCategories.has(s.key)}
+            onToggleHidden={() => setCategoryHidden(s.key, !hiddenCategories.has(s.key))}
             onPreview={setPreviewItem}
             onEdit={setEditItem}
             onHide={handleHide}

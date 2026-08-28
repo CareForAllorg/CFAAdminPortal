@@ -8,6 +8,7 @@ import { chapterCheckins } from './_handlers/chapterCheckins.js';
 import { checkinDeadlines } from './_handlers/checkinDeadlines.js';
 import { mentors } from './_handlers/mentors.js';
 import { resources } from './_handlers/resources.js';
+import { resourceCategorySettings } from './_handlers/resourceCategorySettings.js';
 import { mentorshipSessions } from './_handlers/mentorshipSessions.js';
 import { overview } from './_handlers/overview.js';
 import { leaderboard } from './_handlers/leaderboard.js';
@@ -68,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'checkin-deadlines': return await checkinDeadlines(req, res, ctx);
       case 'mentors': return await mentors(req, res, ctx, sub);
       case 'resources': return await resources(req, res, ctx, sub);
+      case 'resource-category-settings': return await resourceCategorySettings(req, res, ctx, sub);
       case 'mentorship-sessions': return await mentorshipSessions(req, res, ctx);
       case 'overview': return await overview(req, res, ctx, sub);
       case 'leaderboard': return await leaderboard(req, res, ctx, sub);
