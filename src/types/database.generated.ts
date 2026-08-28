@@ -391,6 +391,7 @@ export interface Database {
           status: 'published' | 'coming-soon';
           featured: boolean;
           video_role: string | null;
+          sort_order: number;
           updated_at: string;
         };
         Insert: {
@@ -405,6 +406,7 @@ export interface Database {
           status?: 'published' | 'coming-soon';
           featured?: boolean;
           video_role?: string | null;
+          sort_order?: number;
           updated_at?: string;
         };
         Update: {
@@ -419,6 +421,7 @@ export interface Database {
           status?: 'published' | 'coming-soon';
           featured?: boolean;
           video_role?: string | null;
+          sort_order?: number;
           updated_at?: string;
         };
         Relationships: [];

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Topbar } from '../../components/Topbar';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -31,30 +31,68 @@ interface ResourceSectionProps {
   onHide: (item: Resource) => void;
   onPublish: (item: Resource) => void;
   onDelete: (item: Resource) => void;
+  onReorder: (orderedIds: string[]) => void;
 }
 
-function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish, onDelete }: ResourceSectionProps) {
+function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish, onDelete, onReorder }: ResourceSectionProps) {
+  // Local copy so a drag visibly reorders the list as you drag over other
+  // rows (standard sortable-list feel), independent of the server round
+  // trip that only actually happens once on drop -- reset whenever the
+  // real data changes (a fresh load, or another admin's edit landing).
+  const [localItems, setLocalItems] = useState(items);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  useEffect(() => { setLocalItems(items); }, [items]);
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) { return; }
+    setLocalItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+    setDragIndex(index);
+  }
+
+  function handleDragEnd() {
+    if (dragIndex !== null) { onReorder(localItems.map((item) => item.id)); }
+    setDragIndex(null);
+  }
+
   return (
     <>
       <div className="font-heading text-[16px] text-text tracking-[0.01em] mb-3 flex items-center gap-[9px]">
         <i className={`ti ti-${icon}`} /> {title}
       </div>
       <div className="flex flex-col gap-[10px] mb-[26px] last:mb-0">
-        {items.length === 0 ? (
+        {localItems.length === 0 ? (
           <div className="text-[12.5px] text-muted">No resources yet.</div>
         ) : (
-          items.map((item) => (
-            <div key={item.id} className="bg-card border border-border rounded-[11px] px-[18px] py-[15px] flex items-center justify-between gap-[14px] flex-wrap">
-              <div className="flex-1 min-w-[220px]">
-                <div className="text-[14px] font-bold text-text mb-[3px]">{item.title}</div>
-                <div className="text-[12.5px] text-muted mb-[7px] leading-[1.4]">{item.description}</div>
-                <div className="text-[11.5px] text-muted flex items-center gap-[6px] flex-wrap">
-                  {metaFor(item).map((m, i) => (
-                    <span key={i} className="flex items-center gap-[6px]">
-                      {i > 0 && <span className="w-[3px] h-[3px] rounded-full bg-border shrink-0" />}
-                      {m}
-                    </span>
-                  ))}
+          localItems.map((item, index) => (
+            <div
+              key={item.id}
+              draggable
+              onDragStart={() => setDragIndex(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className="bg-card border border-border rounded-[11px] px-[18px] py-[15px] flex items-center justify-between gap-[14px] flex-wrap"
+              style={{ opacity: dragIndex === index ? 0.5 : 1 }}
+            >
+              <div className="flex items-start gap-[10px] flex-1 min-w-[220px]">
+                <i className="ti ti-grip-vertical text-muted text-[16px] mt-[2px] cursor-grab shrink-0" title="Drag to reorder" />
+                <div className="flex-1">
+                  <div className="text-[14px] font-bold text-text mb-[3px]">{item.title}</div>
+                  <div className="text-[12.5px] text-muted mb-[7px] leading-[1.4]">{item.description}</div>
+                  <div className="text-[11.5px] text-muted flex items-center gap-[6px] flex-wrap">
+                    {metaFor(item).map((m, i) => (
+                      <span key={i} className="flex items-center gap-[6px]">
+                        {i > 0 && <span className="w-[3px] h-[3px] rounded-full bg-border shrink-0" />}
+                        {m}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-[14px] shrink-0">
@@ -81,7 +119,7 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
 }
 
 export function ResourcesPage() {
-  const { groups, createResource, updateResource, deleteResource } = useResources();
+  const { groups, createResource, updateResource, deleteResource, reorderResources } = useResources();
   const [previewItem, setPreviewItem] = useState<Resource | null>(null);
   const [editItem, setEditItem] = useState<Resource | null>(null);
   const [deleteItem, setDeleteItem] = useState<Resource | null>(null);
@@ -146,6 +184,7 @@ export function ResourcesPage() {
             onHide={handleHide}
             onPublish={handlePublish}
             onDelete={setDeleteItem}
+            onReorder={reorderResources}
           />
         ))}
       </Card>

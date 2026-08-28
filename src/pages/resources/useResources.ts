@@ -48,5 +48,14 @@ export function useResources() {
     return ok;
   }
 
-  return { groups: groupByCategory(resources), loading, createResource, updateResource, deleteResource, reload: load };
+  // orderedIds is the full new order for one category (drag-and-drop drops
+  // the whole reordered list, not just the one moved row) -- reassigns
+  // sort_order 0..n-1 across it in a single request.
+  async function reorderResources(orderedIds: string[]) {
+    const ok = await mutateOrToast(api.patch('/resources/reorder', { orderedIds }), 'Reordering resources');
+    if (ok) { await load(); }
+    return ok;
+  }
+
+  return { groups: groupByCategory(resources), loading, createResource, updateResource, deleteResource, reorderResources, reload: load };
 }
