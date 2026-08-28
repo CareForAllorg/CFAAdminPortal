@@ -37,6 +37,10 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
       query = query.not('verify_method', 'is', null);
     }
 
+    if (firstQueryValue(req, 'hasProof') === 'true') {
+      query = query.not('proof_path', 'is', null);
+    }
+
     const verificationCompleted = firstQueryValue(req, 'verificationCompleted');
     if (verificationCompleted === 'true' || verificationCompleted === 'false') {
       query = query.eq('verification_completed', verificationCompleted === 'true');

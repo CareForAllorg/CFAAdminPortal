@@ -6,8 +6,9 @@ import { useApprovalStats } from './useApprovalStats';
 import { ProjectSubmissionsTab } from './ProjectSubmissionsTab';
 import { MappingSubmissionsTab } from './MappingSubmissionsTab';
 import { VerificationTab } from './VerificationTab';
+import { ProjectPhotosTab } from './ProjectPhotosTab';
 
-type ApprovalTab = 'projects' | 'mapping' | 'verification';
+type ApprovalTab = 'projects' | 'mapping' | 'verification' | 'photos';
 
 export function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<ApprovalTab>('projects');
@@ -35,6 +36,7 @@ export function ApprovalsPage() {
           { id: 'projects', label: 'Project & Impact Hour Submissions' },
           { id: 'mapping', label: 'Mapping & Mapathon Submissions' },
           { id: 'verification', label: 'Service Hour Verification' },
+          { id: 'photos', label: 'Project Photos' },
         ]}
         activeId={activeTab}
         onChange={(id) => setActiveTab(id as ApprovalTab)}
@@ -43,6 +45,7 @@ export function ApprovalsPage() {
       {activeTab === 'projects' ? <ProjectSubmissionsTab onMutated={bumpStats} /> : null}
       {activeTab === 'mapping' ? <MappingSubmissionsTab onMutated={bumpStats} /> : null}
       {activeTab === 'verification' ? <VerificationTab onMutated={bumpStats} /> : null}
+      {activeTab === 'photos' ? <ProjectPhotosTab /> : null}
     </>
   );
 }
