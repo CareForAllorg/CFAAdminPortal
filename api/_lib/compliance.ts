@@ -75,13 +75,20 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
   const deadlines: Deadlines = deadlinesRes.data ?? {};
 
   const memberCountByChapterId: Record<string, number> = {};
-  const leadByChapterId: Record<string, string> = {};
+  const leadNamesByChapterId: Record<string, string[]> = {};
   profiles.forEach((p) => {
     if (!p.chapter_id) { return; }
     memberCountByChapterId[p.chapter_id] = (memberCountByChapterId[p.chapter_id] || 0) + 1;
-    if (p.role === 'chapter_lead' && !leadByChapterId[p.chapter_id]) {
-      leadByChapterId[p.chapter_id] = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '-';
+    if (p.role === 'chapter_lead') {
+      const name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '-';
+      (leadNamesByChapterId[p.chapter_id] ??= []).push(name);
     }
+  });
+  // A chapter can have co-leads, not just one -- join every chapter_lead's
+  // name rather than only the first one found in the profiles list.
+  const leadByChapterId: Record<string, string> = {};
+  Object.keys(leadNamesByChapterId).forEach((chapterId) => {
+    leadByChapterId[chapterId] = leadNamesByChapterId[chapterId].join(', ');
   });
 
   // service_logs.user_id has no direct FK to profiles (see
