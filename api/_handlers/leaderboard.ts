@@ -40,16 +40,29 @@ export async function leaderboard(req: VercelRequest, res: VercelResponse, ctx: 
 async function individuals(res: VercelResponse, ctx: RequestContext) {
   const { supabase } = ctx;
 
-  const { data: logs, error } = await supabase
-    .from('service_logs')
-    .select('hours, user_id, name')
-    .eq('status', 'approved');
+  const [{ data: logs, error }, { data: mentorProfiles, error: mentorsError }] = await Promise.all([
+    supabase.from('service_logs').select('hours, user_id, name').eq('status', 'approved'),
+    // Mentors previously only appeared here once they had at least one
+    // approved service_logs row -- a mentor with 0 hours logged so far was
+    // just invisible on the board, unlike chapters/partners below (which
+    // are seeded from their own master list, not just service_logs).
+    supabase.from('profiles').select('id, first_name, last_name, role, chapter_id, chapters:chapter_id ( name )').eq('role', 'mentor'),
+  ]);
   if (error) { throw error; }
+  if (mentorsError) { throw mentorsError; }
 
   const rows = logs ?? [];
   const profileById = await fetchProfilesByUserId(supabase, collectUserIds(rows));
 
   const totals: Record<string, IndividualRow> = {};
+
+  (mentorProfiles ?? []).forEach((profile) => {
+    const displayName = ((profile.first_name || '') + ' ' + (profile.last_name || '')).trim();
+    if (!displayName) { return; }
+    const chapter = (profile as unknown as { chapters?: { name: string } | null }).chapters?.name || 'Mentor';
+    totals[profile.id] = { name: displayName, chapter, hours: 0, userId: profile.id };
+  });
+
   rows.forEach((row) => {
     let key: string;
     let displayName: string;
