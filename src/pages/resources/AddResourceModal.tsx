@@ -12,7 +12,7 @@ interface AddResourceModalProps {
 
 const CATEGORIES: Resource['category'][] = ['Handbooks', 'Toolkits', 'Videos', 'Other', 'Chapter Lead'];
 const SOURCE_TYPES = ['Google Doc', 'Google Slides', 'External Link', 'Template', 'Video', 'Discord'];
-const AUDIENCES = ['All Members', 'Chapter Leads', 'Chapter Members', 'Independent Members'];
+const AUDIENCES = ['All Members', 'Chapter Leads', 'Chapter Members', 'Independent Members', 'Mentors'];
 // Only meaningful on the role-specific onboarding-video rows in the
 // "Videos" category -- the member portal picks the one row matching the
 // viewer's own role to show in the welcome-video modal, so this must match
