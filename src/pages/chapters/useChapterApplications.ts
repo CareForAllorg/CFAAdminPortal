@@ -23,7 +23,9 @@ export interface ChapterApplicationMeta {
   advisor_name?: string;
   advisor_email?: string;
   co_lead_name?: string;
-  co_leads?: { name?: string; email?: string }[];
+  // Older submissions stored a single "name" field; the co-lead form now
+  // collects first/last name separately -- both shapes can appear here.
+  co_leads?: { name?: string; first_name?: string; last_name?: string; email?: string }[];
 }
 
 export interface ChapterApplication {

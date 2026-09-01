@@ -51,7 +51,7 @@ export function ChapterApplications({ applications, loading, onApprove, onReject
             const coLeads = m.application_cofounder === 'yes'
               ? (m.application_cofounder_info || 'Yes')
               : (m.co_leads?.length
-                  ? m.co_leads.map((cl) => [cl.name, cl.email].filter(Boolean).join(' — ')).join(', ')
+                  ? m.co_leads.map((cl) => [cl.name || [cl.first_name, cl.last_name].filter(Boolean).join(' '), cl.email].filter(Boolean).join(' — ')).join(', ')
                   : m.co_lead_name) || undefined;
             return (
               <div key={app.id} className="border border-border rounded-[10px] p-4">
