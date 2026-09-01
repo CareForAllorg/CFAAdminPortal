@@ -6,6 +6,42 @@ import { MemberProfileModal } from '../../components/MemberProfileModal';
 import { formatDate } from '../../utils/formatDate';
 import { formatHours } from '../../utils/formatHours';
 import { useVerifications } from './useVerifications';
+import { ProofDownloadButton } from './ProofPhoto';
+
+// Keys match SubmissionDetails in the member-side form
+// (app/portal/service-hours/page.tsx) -- human labels for whichever of
+// these actually came through on a given request (most are only relevant
+// to one verification method, so a given request only ever has a few).
+// The *FilePath keys are rendered separately below as download buttons
+// (paired with their *FileName sibling), not as plain text here.
+const DETAIL_LABELS: Record<string, string> = {
+  schoolName: 'School Name',
+  deadline: 'Submission Deadline',
+  portalLink: 'Submission Portal Link',
+  submissionInstructions: 'Submission Instructions',
+  supervisorName: 'Supervisor Name',
+  supervisorEmail: 'Supervisor Email',
+  addresseeName: 'Addressed To',
+  addresseeOrg: 'Title / Organization',
+  docusignName: 'Name',
+  docusignEmail: 'Email',
+  logContactName: 'Contact Name',
+  logContactInfo: 'Contact Email / Phone',
+  eventName: 'Name',
+  eventEmail: 'Email',
+  otherName: 'Name',
+  otherEmail: 'Email',
+  otherInstructions: 'Instructions for CFA Team',
+};
+
+// Each uploaded-document pair from the member form: fileNameKey holds the
+// display name, filePathKey the private-bucket path a signed URL is
+// generated from on demand (see ProofDownloadButton).
+const UPLOADED_DOCUMENTS: { fileNameKey: string; filePathKey: string; label: string }[] = [
+  { fileNameKey: 'docusignFileName', filePathKey: 'docusignFilePath', label: 'Uploaded Document' },
+  { fileNameKey: 'logFileName', filePathKey: 'logFilePath', label: 'Uploaded Log Sheet' },
+  { fileNameKey: 'otherFileName', filePathKey: 'otherFilePath', label: 'Uploaded Document' },
+];
 
 interface VerificationTabProps {
   onMutated: () => void;
@@ -71,6 +107,23 @@ export function VerificationTab({ onMutated }: VerificationTabProps) {
                 <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.05em] mb-[3px]">Verification Method</div>
                 <div className="text-[12.5px] text-text leading-[1.45]">{v.verify_method || '-'}</div>
               </div>
+              {Object.entries(v.verification_details ?? {})
+                .filter(([key, value]) => value && !key.endsWith('FilePath') && !key.endsWith('FileName'))
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.05em] mb-[3px]">{DETAIL_LABELS[key] ?? key}</div>
+                    <div className="text-[12.5px] text-text leading-[1.45] whitespace-pre-wrap">{value}</div>
+                  </div>
+                ))}
+              {UPLOADED_DOCUMENTS.filter((d) => v.verification_details?.[d.filePathKey]).map((d) => (
+                <div key={d.filePathKey}>
+                  <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.05em] mb-[3px]">{d.label}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12.5px] text-text truncate">{v.verification_details![d.fileNameKey] || 'Document'}</span>
+                    <ProofDownloadButton path={v.verification_details![d.filePathKey]} />
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="flex items-center justify-between border-t border-border pt-3">
               <span className="text-[11.5px] text-muted">

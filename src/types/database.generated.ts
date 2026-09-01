@@ -105,6 +105,7 @@ export interface Database {
           agreed_media_release: boolean | null;
           buildings_mapped: number;
           km_roads_mapped: number;
+          mapping_hours: number;
           calendly_url: string | null;
           avatar_url: string | null;
         };
@@ -133,6 +134,7 @@ export interface Database {
           agreed_media_release?: boolean | null;
           buildings_mapped?: number;
           km_roads_mapped?: number;
+          mapping_hours?: number;
           calendly_url?: string | null;
           avatar_url?: string | null;
         };
@@ -161,6 +163,7 @@ export interface Database {
           agreed_media_release?: boolean | null;
           buildings_mapped?: number;
           km_roads_mapped?: number;
+          mapping_hours?: number;
           calendly_url?: string | null;
           avatar_url?: string | null;
         };
@@ -278,6 +281,7 @@ export interface Database {
           verify_method: string | null;
           verification_completed: boolean;
           verification_completed_at: string | null;
+          verification_details: unknown | null;
           primary_impact: string | null;
           impact_magnitude: number | null;
           secondary_impact: string | null;
@@ -302,6 +306,7 @@ export interface Database {
           verify_method?: string | null;
           verification_completed?: boolean;
           verification_completed_at?: string | null;
+          verification_details?: unknown | null;
           primary_impact?: string | null;
           impact_magnitude?: number | null;
           secondary_impact?: string | null;
@@ -326,6 +331,7 @@ export interface Database {
           verify_method?: string | null;
           verification_completed?: boolean;
           verification_completed_at?: string | null;
+          verification_details?: unknown | null;
           primary_impact?: string | null;
           impact_magnitude?: number | null;
           secondary_impact?: string | null;

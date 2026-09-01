@@ -12,8 +12,8 @@ import { attachProfiles } from '../_lib/joinProfiles.js';
 const LOG_COLUMNS = `
   id, user_id, name, org_name, activity_type, hours, status, description,
   submitted_at, reviewed_at, reviewed_by, verify_method, verification_completed,
-  verification_completed_at, primary_impact, impact_magnitude, secondary_impact,
-  secondary_impact_magnitude, proof_path
+  verification_completed_at, verification_details, primary_impact, impact_magnitude,
+  secondary_impact, secondary_impact_magnitude, proof_path
 `;
 
 // Handles /api/service-logs (list/create) and /api/service-logs/:id
@@ -154,14 +154,18 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
 
     // Mapping submissions carry the member's new cumulative totals, not a
     // delta -- approving one must REPLACE profiles.buildings_mapped/
-    // km_roads_mapped, never add to them, per the member-facing form's
-    // "must replace the last reported totals" requirement.
+    // km_roads_mapped/mapping_hours, never add to them, per the
+    // member-facing form's "must replace the last reported totals"
+    // requirement. mapping_hours is kept out of the normal additive
+    // service_logs.hours sum everywhere Total Hours is computed (see those
+    // call sites) specifically so a resubmitted total doesn't inflate it.
     if (updates.status === 'approved' && data.user_id && data.primary_impact === 'Buildings Mapped') {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           buildings_mapped: data.impact_magnitude ?? 0,
           km_roads_mapped: data.secondary_impact_magnitude ?? 0,
+          mapping_hours: data.hours ?? 0,
         })
         .eq('id', data.user_id);
       if (profileError) { throw profileError; }

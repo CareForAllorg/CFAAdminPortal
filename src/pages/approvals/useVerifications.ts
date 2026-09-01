@@ -8,6 +8,7 @@ export interface VerificationRow {
   verify_method: string | null;
   verification_completed: boolean;
   verification_completed_at: string | null;
+  verification_details: Record<string, string> | null;
   displayName: string;
   displayChapter: string;
   state: 'complete' | 'incomplete';
@@ -22,6 +23,7 @@ interface ServiceLogApiRow {
   verify_method: string | null;
   verification_completed: boolean;
   verification_completed_at: string | null;
+  verification_details: Record<string, string> | null;
   profiles: EmbeddedProfile | null;
 }
 
