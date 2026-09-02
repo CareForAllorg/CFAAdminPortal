@@ -17,6 +17,7 @@ export interface EnrichedChapter {
   checkins: ChapterCheckin[];
   compliant: boolean;
   onboardingChecklist: boolean[];
+  isPartner: boolean;
 }
 
 interface EnrichedChaptersResponse {

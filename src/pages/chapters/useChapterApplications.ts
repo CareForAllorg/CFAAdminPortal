@@ -26,6 +26,11 @@ export interface ChapterApplicationMeta {
   // Older submissions stored a single "name" field; the co-lead form now
   // collects first/last name separately -- both shapes can appear here.
   co_leads?: { name?: string; first_name?: string; last_name?: string; email?: string }[];
+  // Set when this "chapter" is really a program partner org signing up
+  // through the Partner With Us onboarding path -- same underlying
+  // chapters row and review flow, just needs a visual flag so reviewers
+  // don't confuse it for an actual chapter.
+  is_partner?: boolean;
 }
 
 export interface ChapterApplication {

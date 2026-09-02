@@ -57,7 +57,12 @@ export function ChapterApplications({ applications, loading, onApprove, onReject
               <div key={app.id} className="border border-border rounded-[10px] p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <div className="text-[14px] font-bold text-text">{app.name}</div>
+                    <div className="text-[14px] font-bold text-text flex items-center gap-2">
+                      {app.name}
+                      {m.is_partner && (
+                        <span className="inline-flex items-center px-[8px] py-[1px] rounded-full text-[10.5px] font-bold uppercase tracking-[0.04em] bg-hover-tint text-brand">Partner</span>
+                      )}
+                    </div>
                     <div className="text-[11.5px] text-muted mt-[2px]">
                       Applied {formatDate(m.applied_at || app.createdAt)}
                       {m.chapter_type ? ` · ${m.chapter_type === 'school' ? 'School-based' : 'Community-based'}` : ''}

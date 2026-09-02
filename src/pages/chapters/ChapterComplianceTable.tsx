@@ -77,17 +77,23 @@ export function ChapterComplianceTable({
               {ch.projectCount} / 2
             </div>
 
-            <div onClick={() => setOpenChapterId(ch.id)} className="flex gap-[5px] cursor-pointer [&:hover>div]:opacity-80">
-              {ch.quarterStatuses.map((status, i) => (
-                <div
-                  key={i}
-                  title={DOT_TITLE[status]}
-                  className={`w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-[10px] font-bold ${DOT_CLASS[status]}`}
-                >
-                  Q{i + 1}
-                </div>
-              ))}
-            </div>
+            {ch.isPartner ? (
+              <div className="text-[11.5px] text-muted italic" title="Program partners don't submit quarterly check-ins">
+                N/A — partner org
+              </div>
+            ) : (
+              <div onClick={() => setOpenChapterId(ch.id)} className="flex gap-[5px] cursor-pointer [&:hover>div]:opacity-80">
+                {ch.quarterStatuses.map((status, i) => (
+                  <div
+                    key={i}
+                    title={DOT_TITLE[status]}
+                    className={`w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-[10px] font-bold ${DOT_CLASS[status]}`}
+                  >
+                    Q{i + 1}
+                  </div>
+                ))}
+              </div>
+            )}
             <div title="Self-reported by the chapter lead in their Onboarding Checklist -- not verified watch tracking">
               <StatusPill variant={ch.onboardingChecklist[0] ? 'success' : 'neutral'}>
                 {ch.onboardingChecklist[0] ? 'Watched' : 'Not yet'}

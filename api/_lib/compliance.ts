@@ -32,6 +32,11 @@ export interface EnrichedChapter {
   // fixed order (Watch Onboarding Video, Draft Constitution & Set Up,
   // Add Prospective Members), not verified completion of any of them.
   onboardingChecklist: boolean[];
+  // A program partner signed up through the Volunteer Portal's "Partner
+  // With Us" flow (chapters.meta.is_partner) -- they use Chapter Hub like
+  // any chapter, but don't submit quarterly check-ins, so that leg of
+  // annual compliance doesn't apply to them.
+  isPartner: boolean;
 }
 
 export interface ChapterComplianceResult {
@@ -134,7 +139,8 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
       return 'pending';
     });
 
-    const allCheckinsIn = quarterStatuses.every((s) => s === 'done');
+    const isPartner = !!(ch.meta as { is_partner?: boolean } | null)?.is_partner;
+    const allCheckinsIn = isPartner || quarterStatuses.every((s) => s === 'done');
     const derivedProjectCount = projectCountByChapterId[ch.id] || 0;
     const projectCount = ch.project_count_override ?? derivedProjectCount;
 
@@ -150,6 +156,7 @@ export async function computeChapterCompliance(req: VercelRequest, ctx: RequestC
       checkins: chapterCheckins,
       compliant: projectCount >= 2 && allCheckinsIn,
       onboardingChecklist: (ch.meta as { onboarding_checklist?: boolean[] } | null)?.onboarding_checklist ?? [false, false, false],
+      isPartner,
     };
   });
 
