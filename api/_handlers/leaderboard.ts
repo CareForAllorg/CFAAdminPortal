@@ -100,7 +100,7 @@ async function chapters(res: VercelResponse, ctx: RequestContext) {
   const { supabase } = ctx;
 
   const [chaptersRes, partnersRes, logsRes] = await Promise.all([
-    supabase.from('chapters').select('id, name'),
+    supabase.from('chapters').select('id, name, meta'),
     supabase.from('partners').select('id, name'),
     supabase.from('service_logs').select('hours, user_id, org_name').eq('status', 'approved'),
   ]);
@@ -128,7 +128,14 @@ async function chapters(res: VercelResponse, ctx: RequestContext) {
   });
 
   const chapterRows: ChapterRow[] = (chaptersRes.data ?? []).map((c) => ({
-    id: c.id, name: c.name, type: 'Chapter', hours: hoursByChapterName[c.name] || 0,
+    id: c.id,
+    name: c.name,
+    // A program partner signed up through the Volunteer Portal's "Partner
+    // With Us" flow is a real chapters row under the hood (meta.is_partner)
+    // -- tag it 'Partner' here too so it isn't mislabeled 'Chapter' just
+    // because it lives in the same table as the admin-added partners rows.
+    type: (c.meta as { is_partner?: boolean } | null)?.is_partner ? 'Partner' : 'Chapter',
+    hours: hoursByChapterName[c.name] || 0,
   }));
   const partnerRows: ChapterRow[] = (partnersRes.data ?? []).map((p) => ({
     id: p.id, name: p.name, type: 'Partner', hours: hoursByOrgNameLower[p.name.trim().toLowerCase()] || 0,
