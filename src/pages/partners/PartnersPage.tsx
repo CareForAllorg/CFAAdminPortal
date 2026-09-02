@@ -5,7 +5,7 @@ import { Button } from '../../components/Button';
 import { SearchBar } from '../../components/SearchBar';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { formatDate } from '../../utils/formatDate';
-import { usePartners, type Partner } from './usePartners';
+import { usePartners, partnerContactName, type Partner } from './usePartners';
 import { PartnerEditModal } from './PartnerEditModal';
 
 export function PartnersPage() {
@@ -61,9 +61,9 @@ export function PartnersPage() {
               {p.notes ? <div className="text-[11.5px] text-muted mt-px">{p.notes}</div> : null}
             </div>
             <div className="text-[11.5px] text-muted">
-              {p.contact_name || p.contact_email ? (
+              {partnerContactName(p) || p.contact_email ? (
                 <>
-                  {p.contact_name ? <div>{p.contact_name}</div> : null}
+                  {partnerContactName(p) ? <div>{partnerContactName(p)}</div> : null}
                   {p.contact_email ? <div>{p.contact_email}</div> : null}
                 </>
               ) : '-'}

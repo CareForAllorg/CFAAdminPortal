@@ -16,7 +16,8 @@ const labelClass = 'block text-[11px] font-bold text-muted uppercase tracking-[0
 export function PartnerEditModal({ open, item, onClose, onSave }: PartnerEditModalProps) {
   const [name, setName] = useState('');
   const [website, setWebsite] = useState('');
-  const [contactName, setContactName] = useState('');
+  const [contactFirstName, setContactFirstName] = useState('');
+  const [contactLastName, setContactLastName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -24,7 +25,21 @@ export function PartnerEditModal({ open, item, onClose, onSave }: PartnerEditMod
   useEffect(() => {
     setName(item?.name ?? '');
     setWebsite(item?.website ?? '');
-    setContactName(item?.contact_name ?? '');
+    // Falls back to splitting the legacy single contact_name field on the
+    // first space only when this partner hasn't been re-saved with the
+    // split fields yet -- same pattern used elsewhere for this kind of
+    // one-time field migration.
+    if (item?.contact_first_name || item?.contact_last_name) {
+      setContactFirstName(item?.contact_first_name ?? '');
+      setContactLastName(item?.contact_last_name ?? '');
+    } else if (item?.contact_name) {
+      const [first, ...rest] = item.contact_name.trim().split(' ');
+      setContactFirstName(first ?? '');
+      setContactLastName(rest.join(' '));
+    } else {
+      setContactFirstName('');
+      setContactLastName('');
+    }
     setContactEmail(item?.contact_email ?? '');
     setNotes(item?.notes ?? '');
   }, [item, open]);
@@ -34,7 +49,8 @@ export function PartnerEditModal({ open, item, onClose, onSave }: PartnerEditMod
     const ok = await onSave({
       name: name.trim(),
       website: website.trim() || null,
-      contact_name: contactName.trim() || null,
+      contact_first_name: contactFirstName.trim() || null,
+      contact_last_name: contactLastName.trim() || null,
       contact_email: contactEmail.trim() || null,
       notes: notes.trim() || null,
     });
@@ -53,9 +69,15 @@ export function PartnerEditModal({ open, item, onClose, onSave }: PartnerEditMod
           <label className={labelClass}>Website</label>
           <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." className={inputClass} />
         </div>
-        <div>
-          <label className={labelClass}>Contact Name</label>
-          <input type="text" value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} />
+        <div className="grid grid-cols-2 gap-[14px]">
+          <div>
+            <label className={labelClass}>Contact First Name</label>
+            <input type="text" value={contactFirstName} onChange={(e) => setContactFirstName(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Contact Last Name</label>
+            <input type="text" value={contactLastName} onChange={(e) => setContactLastName(e.target.value)} className={inputClass} />
+          </div>
         </div>
         <div>
           <label className={labelClass}>Contact Email</label>

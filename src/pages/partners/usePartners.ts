@@ -5,13 +5,25 @@ export interface Partner {
   id: string;
   name: string;
   website: string | null;
+  // Legacy free-text field -- kept for partners saved before the
+  // first/last split, displayed as a fallback when the new fields are
+  // empty. New saves always write first/last instead.
   contact_name: string | null;
+  contact_first_name: string | null;
+  contact_last_name: string | null;
   contact_email: string | null;
   notes: string | null;
   created_at: string;
 }
 
 export type PartnerPayload = Partial<Omit<Partner, 'id' | 'created_at'>>;
+
+// Prefers the split first/last fields; falls back to the legacy
+// contact_name for partners that haven't been re-saved since the split.
+export function partnerContactName(p: Pick<Partner, 'contact_name' | 'contact_first_name' | 'contact_last_name'>): string | null {
+  const split = [p.contact_first_name, p.contact_last_name].filter(Boolean).join(' ').trim();
+  return split || p.contact_name;
+}
 
 export function usePartners() {
   const [partners, setPartners] = useState<Partner[]>([]);

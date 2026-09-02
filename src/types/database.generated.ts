@@ -550,6 +550,8 @@ export interface Database {
           name: string;
           website: string | null;
           contact_name: string | null;
+          contact_first_name: string | null;
+          contact_last_name: string | null;
           contact_email: string | null;
           notes: string | null;
           created_at: string;
@@ -559,6 +561,8 @@ export interface Database {
           name: string;
           website?: string | null;
           contact_name?: string | null;
+          contact_first_name?: string | null;
+          contact_last_name?: string | null;
           contact_email?: string | null;
           notes?: string | null;
           created_at?: string;
@@ -568,6 +572,8 @@ export interface Database {
           name?: string;
           website?: string | null;
           contact_name?: string | null;
+          contact_first_name?: string | null;
+          contact_last_name?: string | null;
           contact_email?: string | null;
           notes?: string | null;
           created_at?: string;

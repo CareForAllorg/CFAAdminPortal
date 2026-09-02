@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { api, apiOrToast } from '../lib/apiClient';
 import { formatDate } from '../utils/formatDate';
+import { partnerContactName } from '../pages/partners/usePartners';
 
 interface PartnerProfile {
   id: string;
   name: string;
   website: string | null;
   contact_name: string | null;
+  contact_first_name: string | null;
+  contact_last_name: string | null;
   contact_email: string | null;
   notes: string | null;
   created_at: string;
@@ -61,7 +64,7 @@ export function PartnerProfileModal({ partnerId, onClose }: PartnerProfileModalP
               <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{profile.website}</a>
             ) : NOT_SPECIFIED}
           </Field>
-          <Field label="Contact">{profile.contact_name || profile.contact_email ? [profile.contact_name, profile.contact_email].filter(Boolean).join(' — ') : NOT_SPECIFIED}</Field>
+          <Field label="Contact">{partnerContactName(profile) || profile.contact_email ? [partnerContactName(profile), profile.contact_email].filter(Boolean).join(' — ') : NOT_SPECIFIED}</Field>
           <Field label="Added">{formatDate(profile.created_at, '')}</Field>
           <Field label="Notes">{profile.notes || NOT_SPECIFIED}</Field>
         </>
