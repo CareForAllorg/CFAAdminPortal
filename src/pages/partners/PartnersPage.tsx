@@ -9,7 +9,7 @@ import { usePartners, partnerContactName, type Partner } from './usePartners';
 import { PartnerEditModal } from './PartnerEditModal';
 
 export function PartnersPage() {
-  const { partners, createPartner, updatePartner, deletePartner } = usePartners();
+  const { partners, createPartner, updatePartner, deletePartner, approvePartner, rejectPartner } = usePartners();
   const [search, setSearch] = useState('');
   const [editItem, setEditItem] = useState<Partner | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -17,6 +17,8 @@ export function PartnersPage() {
 
   const query = search.trim().toLowerCase();
   const visible = partners.filter((p) => p.name.toLowerCase().includes(query));
+  const pending = visible.filter((p) => p.status === 'pending');
+  const active = visible.filter((p) => p.status !== 'pending');
 
   async function handleConfirmDelete() {
     if (!deleteItem) { return; }
@@ -33,8 +35,35 @@ export function PartnersPage() {
         </Button>
       </div>
       <div className="text-[12.5px] text-muted -mt-[10px]">
-        There's no signup form for partner organizations -- add and maintain them here manually. Shows up in the Admin Overview's Chapters &amp; Partners leaderboard.
+        Add and maintain partners here manually, or approve organizations that sign up as a Program Partner through the Volunteer Portal. Shows up in the Admin Overview's Chapters &amp; Partners leaderboard.
       </div>
+
+      {pending.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-[14px] font-bold text-text flex items-center gap-2">
+              <i className="ti ti-clock text-muted text-[17px]" /> Pending Applications
+              <span className="inline-flex items-center px-[9px] py-[2px] rounded-full text-[11px] font-bold bg-warning-light text-warning-dark">{pending.length}</span>
+            </div>
+          </div>
+          {pending.map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-3 py-[14px] border-b border-border last:border-b-0">
+              <div>
+                <div className="text-[13px] font-semibold text-text">{p.name}</div>
+                <div className="text-[11.5px] text-muted mt-px">
+                  {[partnerContactName(p), p.contact_email].filter(Boolean).join(' — ')}
+                  {p.website ? <> · <a href={p.website} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{p.website}</a></> : null}
+                </div>
+                {p.notes ? <div className="text-[11.5px] text-muted mt-px">{p.notes}</div> : null}
+              </div>
+              <div className="flex items-center gap-[13px] flex-shrink-0">
+                <button onClick={() => approvePartner(p.id)} className="text-[12.5px] font-bold text-success-dark bg-none border-none cursor-pointer font-sans hover:underline">Approve</button>
+                <button onClick={() => rejectPartner(p.id)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Reject</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
 
       <Card>
         <div className="flex items-center justify-between mb-4">
@@ -52,9 +81,9 @@ export function PartnersPage() {
           <div>Actions</div>
         </div>
 
-        {visible.length === 0 ? (
+        {active.length === 0 ? (
           <div className="text-center py-6 text-muted text-[13px]">{partners.length === 0 ? 'No partners added yet.' : 'No matches found.'}</div>
-        ) : visible.map((p) => (
+        ) : active.map((p) => (
           <div key={p.id} className="grid grid-cols-[1.4fr_1.2fr_1.2fr_0.9fr_0.7fr] gap-3 items-center py-[14px] border-b border-border last:border-b-0">
             <div>
               <div className="text-[13px] font-semibold text-text">{p.name}</div>

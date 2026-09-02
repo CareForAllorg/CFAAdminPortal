@@ -3,11 +3,11 @@ import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import type { Database } from '../../src/types/database.generated.js';
 
-const PARTNER_COLUMNS = 'id, name, website, contact_name, contact_first_name, contact_last_name, contact_email, notes, created_at';
+const PARTNER_COLUMNS = 'id, name, website, contact_name, contact_first_name, contact_last_name, contact_email, notes, status, profile_id, created_at';
 
 type PartnerUpdate = Database['public']['Tables']['partners']['Update'];
 
-const PATCHABLE_FIELDS = ['name', 'website', 'contact_first_name', 'contact_last_name', 'contact_email', 'notes'] as const satisfies readonly (keyof PartnerUpdate)[];
+const PATCHABLE_FIELDS = ['name', 'website', 'contact_first_name', 'contact_last_name', 'contact_email', 'notes', 'status'] as const satisfies readonly (keyof PartnerUpdate)[];
 
 // There's no member-facing signup form for partner organizations (unlike
 // chapters) -- CareForAll staff add these by hand, which is why this is
@@ -37,6 +37,10 @@ export async function partners(req: VercelRequest, res: VercelResponse, ctx: Req
         contact_last_name: req.body.contact_last_name || null,
         contact_email: req.body.contact_email || null,
         notes: req.body.notes || null,
+        // Admin-added partners go live immediately -- only self-service
+        // signups (app/onboarding/actions.ts on VolunteerPortalCFA) start
+        // as 'pending', matching the column's own default.
+        status: 'active',
       })
       .select(PARTNER_COLUMNS)
       .single();
