@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
-import { firstQueryValue, parsePageParams } from '../_lib/pagination.js';
+import { allQueryValues, firstQueryValue, parsePageParams } from '../_lib/pagination.js';
 import { attachProfiles } from '../_lib/joinProfiles.js';
 
 // service_logs.user_id has a real FK to `users`, not `profiles` (profiles
@@ -46,11 +46,20 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
       query = query.eq('verification_completed', verificationCompleted === 'true');
     }
 
-    const activityTypeContains = firstQueryValue(req, 'activityTypeContains');
-    if (activityTypeContains) { query = query.ilike('activity_type', `%${activityTypeContains}%`); }
+    // Repeatable -- ORed together (row matches if activity_type contains
+    // ANY of them), so a tab like Mentorship can match several distinct
+    // activity_type strings ("Mentor Office Hours", "Curriculum
+    // Development", ...) in one query.
+    const activityTypeContainsValues = allQueryValues(req, 'activityTypeContains');
+    if (activityTypeContainsValues.length > 0) {
+      query = query.or(activityTypeContainsValues.map((v) => `activity_type.ilike.%${v}%`).join(','));
+    }
 
-    const activityTypeExcludes = firstQueryValue(req, 'activityTypeExcludes');
-    if (activityTypeExcludes) { query = query.not('activity_type', 'ilike', `%${activityTypeExcludes}%`); }
+    // Also repeatable, but ANDed (each .not() is its own exclusion) so a
+    // queue can be kept clear of several other tabs' activity types at once.
+    for (const v of allQueryValues(req, 'activityTypeExcludes')) {
+      query = query.not('activity_type', 'ilike', `%${v}%`);
+    }
 
     const submittedAfter = firstQueryValue(req, 'submittedAfter');
     if (submittedAfter) { query = query.gte('submitted_at', submittedAfter); }

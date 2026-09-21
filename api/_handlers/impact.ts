@@ -24,7 +24,7 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
     supabase.from('chapters').select('created_at'),
     supabase
       .from('service_logs')
-      .select('user_id, primary_impact, impact_magnitude, secondary_impact, secondary_impact_magnitude, submitted_at')
+      .select('user_id, primary_impact, impact_magnitude, secondary_impact, secondary_impact_magnitude, submitted_at, activity_type, hours')
       .eq('status', 'approved'),
     supabase.from('mapathon_dates').select('event_date, total_buildings_mapped, total_km_roads_mapped'),
   ]);
@@ -91,6 +91,18 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
   (logsRes.data ?? []).forEach((row) => {
     if (row.primary_impact && !MAPPING_CATEGORIES.has(row.primary_impact)) { addEvent(row.primary_impact, row.impact_magnitude, row.submitted_at); }
     if (row.secondary_impact && !MAPPING_CATEGORIES.has(row.secondary_impact)) { addEvent(row.secondary_impact, row.secondary_impact_magnitude, row.submitted_at); }
+  });
+
+  // Mentor-logged activities (see VolunteerPortal's app/api/mentor-hours +
+  // app/api/mentor-curriculum) don't set primary_impact/secondary_impact at
+  // all -- they'd otherwise be invisible here. Tracked by hours, not a
+  // magnitude field, since that's the only quantity every one of these
+  // activity types actually reports.
+  const MENTOR_ACTIVITY_TYPES = new Set(['Mentor Office Hours', 'Mentor Impact Hours', 'Mentor Quarterly Check-In', 'Curriculum Development']);
+  (logsRes.data ?? []).forEach((row) => {
+    if (row.activity_type && MENTOR_ACTIVITY_TYPES.has(row.activity_type)) {
+      addEvent('Mentorship Hours', row.hours, row.submitted_at);
+    }
   });
 
   sendJson(res, 200, {

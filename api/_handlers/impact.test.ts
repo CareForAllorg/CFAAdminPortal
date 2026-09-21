@@ -14,6 +14,8 @@ interface LogRow {
   secondary_impact: string | null;
   secondary_impact_magnitude: number | null;
   submitted_at: string | null;
+  activity_type?: string | null;
+  hours?: number | null;
 }
 
 function sum(events: { magnitude: number }[]): number {
@@ -112,6 +114,59 @@ describe('impact /events mapping calculation', () => {
     const body = res._body as { categories: Record<string, { date: string; magnitude: number }[]> };
     expect(body.categories['Buildings Mapped']).toBeUndefined();
     expect(body.categories['Roads Mapped']).toBeUndefined();
+  });
+
+  it('sums mentor-logged activity hours into a Mentorship Hours category', async () => {
+    const logs: LogRow[] = [
+      {
+        user_id: 'mentor-1',
+        primary_impact: null,
+        impact_magnitude: null,
+        secondary_impact: null,
+        secondary_impact_magnitude: null,
+        submitted_at: '2026-03-01T00:00:00Z',
+        activity_type: 'Mentor Office Hours',
+        hours: 1,
+      },
+      {
+        user_id: 'mentor-1',
+        primary_impact: null,
+        impact_magnitude: null,
+        secondary_impact: null,
+        secondary_impact_magnitude: null,
+        submitted_at: '2026-03-05T00:00:00Z',
+        activity_type: 'Curriculum Development',
+        hours: 4,
+      },
+      {
+        user_id: 'student-1',
+        primary_impact: 'People Reached',
+        impact_magnitude: 20,
+        secondary_impact: null,
+        secondary_impact_magnitude: null,
+        submitted_at: '2026-03-02T00:00:00Z',
+        activity_type: 'Advocacy Project',
+        hours: 2,
+      },
+    ];
+
+    const res = mockRes();
+    await impact(req(), res, mockCtx({
+      selectByTable: {
+        profiles: { data: [] },
+        chapters: { data: [] },
+        service_logs: { data: logs },
+        mapathon_dates: { data: [] },
+      },
+    }), 'events');
+
+    const body = res._body as { categories: Record<string, { date: string; magnitude: number }[]> };
+    const mentorship = body.categories['Mentorship Hours'];
+    expect(sum(mentorship)).toBe(5);
+    expect(mentorship).toContainEqual({ date: '2026-03-01T00:00:00Z', magnitude: 1 });
+    expect(mentorship).toContainEqual({ date: '2026-03-05T00:00:00Z', magnitude: 4 });
+    // A non-mentor activity type's hours shouldn't leak into this category.
+    expect(mentorship).not.toContainEqual(expect.objectContaining({ magnitude: 2 }));
   });
 
   it('returns 404 unless sub is events', async () => {
