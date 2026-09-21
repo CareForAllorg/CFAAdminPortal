@@ -35,3 +35,12 @@ export function parsePageParams(req: VercelRequest, defaultLimit = DEFAULT_LIMIT
 export function firstQueryValue(req: VercelRequest, key: string): string | undefined {
   return firstValue(req.query[key]);
 }
+
+// Same repeated-key query param (`?key=a&key=b`) as firstQueryValue reads
+// the first of, but returning every value -- for filters where a caller
+// needs to OR/AND together more than one match (e.g. activityTypeContains).
+export function allQueryValues(req: VercelRequest, key: string): string[] {
+  const v = req.query[key];
+  if (v === undefined) { return []; }
+  return Array.isArray(v) ? v : [v];
+}

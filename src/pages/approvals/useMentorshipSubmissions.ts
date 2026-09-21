@@ -3,7 +3,12 @@ import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 import { useServiceLogsRealtime } from '../../lib/useServiceLogsRealtime';
 import { resolveDisplay, type EmbeddedProfile } from './shared';
 
-export interface SubmissionRow {
+export interface StencilFile {
+  path: string;
+  name: string;
+}
+
+export interface MentorshipSubmissionRow {
   id: string;
   user_id: string | null;
   name: string | null;
@@ -13,42 +18,37 @@ export interface SubmissionRow {
   submitted_at: string;
   description: string | null;
   proof_path: string | null;
+  verification_details: { category?: string; stencils?: Record<string, StencilFile> } | null;
   displayName: string;
   displayChapter: string;
 }
 
-interface ServiceLogApiRow {
-  id: string;
-  user_id: string | null;
-  name: string | null;
-  org_name: string | null;
-  activity_type: string;
-  hours: number;
-  submitted_at: string;
-  description: string | null;
-  proof_path: string | null;
+interface MentorshipSubmissionApiRow extends Omit<MentorshipSubmissionRow, 'displayName' | 'displayChapter'> {
   profiles: EmbeddedProfile | null;
 }
 
-export const SUBMISSIONS_PAGE_SIZE = 20;
+export const MENTORSHIP_SUBMISSIONS_PAGE_SIZE = 20;
 
-export function useSubmissions(onMutated: () => void) {
-  const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+// Everything a mentor can log from the Mentorship tab's own logging paths
+// (see VolunteerPortal's app/api/mentor-hours + app/api/mentor-curriculum) --
+// kept out of the general Project & Impact queue (useSubmissions.ts) so
+// mentor time doesn't get mixed in with student project submissions.
+const MENTOR_ACTIVITY_CONTAINS = ['Mentor', 'Curriculum Development'];
+
+export function useMentorshipSubmissions(onMutated: () => void) {
+  const [submissions, setSubmissions] = useState<MentorshipSubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
-    // Mapping/mapathon and mentorship submissions have their own approval
-    // tabs (see useMappingSubmissions.ts / useMapathonSubmissions.ts /
-    // useMentorshipSubmissions.ts) -- excluded here so they don't also show
-    // up in the general Project & Impact queue.
+    const containsQuery = MENTOR_ACTIVITY_CONTAINS.map((v) => `activityTypeContains=${encodeURIComponent(v)}`).join('&');
     const result = await apiOrToast(
-      api.get<{ data: ServiceLogApiRow[]; total: number }>(
-        `/service-logs?status=pending&activityTypeExcludes=map&activityTypeExcludes=Mentor&activityTypeExcludes=${encodeURIComponent('Curriculum Development')}&page=${page}&limit=${SUBMISSIONS_PAGE_SIZE}`
+      api.get<{ data: MentorshipSubmissionApiRow[]; total: number }>(
+        `/service-logs?status=pending&${containsQuery}&page=${page}&limit=${MENTORSHIP_SUBMISSIONS_PAGE_SIZE}`
       ),
-      'Loading submissions',
+      'Loading mentorship submissions',
       { data: [], total: 0 }
     );
 
@@ -59,8 +59,6 @@ export function useSubmissions(onMutated: () => void) {
     }));
     setLoading(false);
 
-    // If an approve/reject emptied the last item on a page past the
-    // first, drop back a page instead of showing a dead-end empty page.
     if (result.data.length === 0 && page > 1) {
       setPage((p) => Math.max(1, p - 1));
     }
@@ -68,8 +66,6 @@ export function useSubmissions(onMutated: () => void) {
 
   useEffect(() => { load(); }, [load]);
 
-  // New submissions land here from the member-facing app in real time, so
-  // the pending queue shouldn't need a manual refresh to show them.
   useServiceLogsRealtime(load);
 
   async function updateSubmissionStatus(logId: string, newStatus: 'approved' | 'rejected') {
@@ -80,5 +76,5 @@ export function useSubmissions(onMutated: () => void) {
     onMutated();
   }
 
-  return { submissions, loading, page, setPage, total, pageSize: SUBMISSIONS_PAGE_SIZE, updateSubmissionStatus };
+  return { submissions, loading, page, setPage, total, pageSize: MENTORSHIP_SUBMISSIONS_PAGE_SIZE, updateSubmissionStatus };
 }

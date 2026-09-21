@@ -23,6 +23,7 @@ const KNOWN_ICONS: Record<string, string> = {
   'Funds Raised': '💵',
   'Roads Mapped': '🛣',
   'Buildings Mapped': '🏢',
+  'Mentorship Hours': '🧑‍🏫',
 };
 const FALLBACK_ICON = '📊';
 
@@ -41,7 +42,7 @@ export function formatCompactNumber(n: number): string {
 // schema) but should still show up as 0 rather than being hidden --
 // unlike other categories, which only appear once real data exists for
 // them.
-const GUARANTEED_CATEGORIES = ['Funds Raised', 'Roads Mapped', 'Buildings Mapped'];
+const GUARANTEED_CATEGORIES = ['Funds Raised', 'Roads Mapped', 'Buildings Mapped', 'Mentorship Hours'];
 
 // 'Items Mapped' is a legacy label from an old mapping-submission fallback
 // (see VolunteerPortalCFA's app/api/mapping/time-log/route.ts) that predates
