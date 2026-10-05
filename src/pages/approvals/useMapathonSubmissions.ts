@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 import { useServiceLogsRealtime } from '../../lib/useServiceLogsRealtime';
 import { resolveDisplay, type EmbeddedProfile } from './shared';
+import { canonicalImpactCategory } from '../../utils/impactCategory';
 
 export interface MapathonSubmissionRow {
   id: string;
@@ -38,11 +39,11 @@ function extractMapathonMetrics(row: ServiceLogApiRow): { buildings: number | nu
   let buildings: number | null = null;
   let roadsKm: number | null = null;
 
-  if (row.primary_impact === 'Buildings Mapped') { buildings = row.impact_magnitude; }
-  else if (row.secondary_impact === 'Buildings Mapped') { buildings = row.secondary_impact_magnitude; }
+  if (canonicalImpactCategory(row.primary_impact) === 'Buildings Mapped') { buildings = row.impact_magnitude; }
+  else if (canonicalImpactCategory(row.secondary_impact) === 'Buildings Mapped') { buildings = row.secondary_impact_magnitude; }
 
-  if (row.primary_impact === 'Roads Mapped') { roadsKm = row.impact_magnitude; }
-  else if (row.secondary_impact === 'Roads Mapped') { roadsKm = row.secondary_impact_magnitude; }
+  if (canonicalImpactCategory(row.primary_impact) === 'Roads Mapped') { roadsKm = row.impact_magnitude; }
+  else if (canonicalImpactCategory(row.secondary_impact) === 'Roads Mapped') { roadsKm = row.secondary_impact_magnitude; }
 
   return { buildings, roadsKm };
 }

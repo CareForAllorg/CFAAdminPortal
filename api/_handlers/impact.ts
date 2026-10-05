@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { methodNotAllowed, sendJson } from '../_lib/http.js';
 import { MEMBER_ROLES } from '../../src/roles.js';
+import { canonicalImpactCategory } from '../../src/utils/impactCategory.js';
 
 // Builds the event series the Impact Measurables page charts (member/
 // chapter growth over time, plus one series per primary/secondary impact
@@ -34,6 +35,14 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
   if (logsRes.error) { throw logsRes.error; }
   if (mapathonsRes.error) { throw mapathonsRes.error; }
 
+  // Normalize label variants ("Roads Mapped (km)" -> "Roads Mapped") before
+  // anything groups or compares by category string.
+  const logRows = (logsRes.data ?? []).map((r) => ({
+    ...r,
+    primary_impact: canonicalImpactCategory(r.primary_impact),
+    secondary_impact: canonicalImpactCategory(r.secondary_impact),
+  }));
+
   const categories: Record<string, { date: string; magnitude: number }[]> = {};
   function addEvent(category: string | null, magnitude: number | null, date: string | null) {
     if (!category || !date) { return; }
@@ -41,7 +50,7 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
     categories[category].push({ date, magnitude: Number(magnitude) || 0 });
   }
 
-  type LogRow = NonNullable<typeof logsRes.data>[number];
+  type LogRow = (typeof logRows)[number];
   const MAPPING_CATEGORIES = new Set(['Buildings Mapped', 'Roads Mapped']);
   function mappingValue(row: LogRow, category: string): number | null {
     if (row.primary_impact === category) { return row.impact_magnitude; }
@@ -57,7 +66,7 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
   // submission should count toward the org-wide total, or a member who
   // resubmits their total would get counted multiple times.
   const latestMappingRowByUser = new Map<string, LogRow>();
-  (logsRes.data ?? []).forEach((row) => {
+  logRows.forEach((row) => {
     const isMappingRow = MAPPING_CATEGORIES.has(row.primary_impact ?? '') || MAPPING_CATEGORIES.has(row.secondary_impact ?? '');
     if (!isMappingRow) { return; }
 
@@ -88,7 +97,7 @@ export async function impact(req: VercelRequest, res: VercelResponse, ctx: Reque
     if (Number(row.total_km_roads_mapped) > 0) { addEvent('Roads Mapped', row.total_km_roads_mapped, row.event_date); }
   });
 
-  (logsRes.data ?? []).forEach((row) => {
+  logRows.forEach((row) => {
     if (row.primary_impact && !MAPPING_CATEGORIES.has(row.primary_impact)) { addEvent(row.primary_impact, row.impact_magnitude, row.submitted_at); }
     if (row.secondary_impact && !MAPPING_CATEGORIES.has(row.secondary_impact)) { addEvent(row.secondary_impact, row.secondary_impact_magnitude, row.submitted_at); }
   });

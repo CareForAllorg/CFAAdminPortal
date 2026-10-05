@@ -3,6 +3,7 @@ import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import { allQueryValues, firstQueryValue, parsePageParams } from '../_lib/pagination.js';
 import { attachProfiles } from '../_lib/joinProfiles.js';
+import { canonicalImpactCategory } from '../../src/utils/impactCategory.js';
 
 // service_logs.user_id has a real FK to `users`, not `profiles` (profiles
 // happens to share the same id space via profiles.id -> users.id), so
@@ -168,7 +169,7 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
     // requirement. mapping_hours is kept out of the normal additive
     // service_logs.hours sum everywhere Total Hours is computed (see those
     // call sites) specifically so a resubmitted total doesn't inflate it.
-    if (updates.status === 'approved' && data.user_id && data.primary_impact === 'Buildings Mapped') {
+    if (updates.status === 'approved' && data.user_id && canonicalImpactCategory(data.primary_impact) === 'Buildings Mapped') {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
