@@ -3,6 +3,7 @@ import { ProtectedLayout, protectedLoader } from './ProtectedLayout';
 import { LoginPage } from '../pages/login/LoginPage';
 import { OverviewPage } from '../pages/overview/OverviewPage';
 import { ApprovalsPage } from '../pages/approvals/ApprovalsPage';
+import { SubmissionLibraryPage } from '../pages/submissions/SubmissionLibraryPage';
 import { ChaptersPage } from '../pages/chapters/ChaptersPage';
 import { MembersPage } from '../pages/members/MembersPage';
 import { ImpactPage } from '../pages/impact/ImpactPage';
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <OverviewPage /> },
       { path: 'approvals', element: <ApprovalsPage /> },
+      { path: 'submissions', element: <SubmissionLibraryPage /> },
       { path: 'chapters', element: <ChaptersPage /> },
       { path: 'members', element: <MembersPage /> },
       { path: 'impact', element: <ImpactPage /> },

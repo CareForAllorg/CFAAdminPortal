@@ -6,6 +6,7 @@ import { Avatar } from './Avatar';
 const NAV_ITEMS = [
   { to: '/', end: true, icon: 'shield-lock', label: 'Admin Overview' },
   { to: '/approvals', end: false, icon: 'checklist', label: 'Service Hour Approvals' },
+  { to: '/submissions', end: false, icon: 'folders', label: 'Submission Library' },
   { to: '/chapters', end: false, icon: 'building-community', label: 'Chapters' },
   { to: '/members', end: false, icon: 'affiliate', label: 'Members & Demographics' },
   { to: '/impact', end: false, icon: 'chart-dots', label: 'Impact Measurables' },
