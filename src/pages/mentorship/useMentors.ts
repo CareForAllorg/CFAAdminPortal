@@ -15,24 +15,22 @@ export type MentorWithAvatar = Mentor & { avatar_url: string | null };
 
 interface MentorshipState {
   mentors: MentorWithAvatar[];
-  sessionCount: number | null;
   loading: boolean;
 }
 
 export function useMentors() {
-  const [state, setState] = useState<MentorshipState>({ mentors: [], sessionCount: null, loading: true });
+  const [state, setState] = useState<MentorshipState>({ mentors: [], loading: true });
   const [mentorProfiles, setMentorProfiles] = useState<MentorProfileOption[]>([]);
 
   const load = useCallback(async () => {
-    const [mentorsResult, sessionsResult, profilesResult] = await Promise.all([
+    const [mentorsResult, profilesResult] = await Promise.all([
       apiOrToast(api.get<{ data: MentorWithAvatar[] }>('/mentors'), 'Loading mentors', { data: [] }),
-      apiOrToast(api.get<{ total: number }>('/mentorship-sessions'), 'Loading session count', { total: 0 }),
       // Every mentor-role profile, so "Add Mentor" can offer the ones that
       // don't have a booking-availability row yet -- not free-typed.
       apiOrToast(api.get<{ data: MentorProfileOption[] }>('/profiles?role=mentor'), 'Loading mentor profiles', { data: [] }),
     ]);
 
-    setState({ mentors: mentorsResult.data, sessionCount: sessionsResult.total, loading: false });
+    setState({ mentors: mentorsResult.data, loading: false });
     setMentorProfiles(profilesResult.data);
   }, []);
 

@@ -10,6 +10,7 @@ import { mentors } from './_handlers/mentors.js';
 import { resources } from './_handlers/resources.js';
 import { resourceCategorySettings } from './_handlers/resourceCategorySettings.js';
 import { mentorshipSessions } from './_handlers/mentorshipSessions.js';
+import { mentorStats } from './_handlers/mentorStats.js';
 import { overview } from './_handlers/overview.js';
 import { leaderboard } from './_handlers/leaderboard.js';
 import { impact } from './_handlers/impact.js';
@@ -71,6 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'resources': return await resources(req, res, ctx, sub);
       case 'resource-category-settings': return await resourceCategorySettings(req, res, ctx, sub);
       case 'mentorship-sessions': return await mentorshipSessions(req, res, ctx);
+      case 'mentor-stats': return await mentorStats(req, res, ctx);
       case 'overview': return await overview(req, res, ctx, sub);
       case 'leaderboard': return await leaderboard(req, res, ctx, sub);
       case 'impact': return await impact(req, res, ctx, sub);

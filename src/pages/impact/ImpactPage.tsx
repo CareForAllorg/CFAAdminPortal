@@ -10,10 +10,13 @@ import { MetricCardGrid } from './MetricCardGrid';
 import { MetricLineChart } from './MetricLineChart';
 import { useMapathonDates, type MapathonDate } from '../resources/useMapathonDates';
 import { MapathonDateEditModal } from '../resources/MapathonDateEditModal';
+import { SegmentedToggle } from '../../components/SegmentedToggle';
+import { MentorImpactView } from './MentorImpactView';
 
 export function ImpactPage() {
   const events = useImpactEvents();
   const [selectedMetric, setSelectedMetric] = useState('totalmembers');
+  const [view, setView] = useState<'overall' | 'mentors'>('overall');
 
   const metrics = events ? metricList(events) : [];
   const metric = metrics.find((m) => m.key === selectedMetric);
@@ -31,64 +34,77 @@ export function ImpactPage() {
 
   return (
     <>
-      <Topbar title="Impact Measurables" />
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <Topbar title="Impact Measurables" />
+        <SegmentedToggle
+          options={[{ value: 'overall', label: 'Overall' }, { value: 'mentors', label: 'Mentors' }]}
+          value={view}
+          onChange={setView}
+        />
+      </div>
 
-      <Card>
-        <div className="text-[14px] font-bold text-text mb-4 flex items-center gap-2">
-          <i className="ti ti-click text-muted text-[17px]" /> Select a Measurable
-        </div>
-        <div className="text-[12.5px] text-muted mb-4 leading-[1.5]">
-          Click a metric below to view its trend chart, with Month / Year options.
-        </div>
-        <MetricCardGrid metrics={metrics} selectedKey={selectedMetric} onSelect={setSelectedMetric} />
-      </Card>
+      {view === 'overall' ? (
+        <>
+          <Card>
+            <div className="text-[14px] font-bold text-text mb-4 flex items-center gap-2">
+              <i className="ti ti-click text-muted text-[17px]" /> Select a Measurable
+            </div>
+            <div className="text-[12.5px] text-muted mb-4 leading-[1.5]">
+              Click a metric below to view its trend chart, with Month / Year options.
+            </div>
+            <MetricCardGrid metrics={metrics} selectedKey={selectedMetric} onSelect={setSelectedMetric} />
+          </Card>
 
-      <MetricLineChart metric={metric} />
+          <MetricLineChart metric={metric} />
 
-      <Card>
-        <div className="flex items-center justify-between flex-wrap gap-[10px] mb-[6px]">
-          <div className="font-heading text-[16px] text-text tracking-[0.01em] flex items-center gap-[9px]">
-            <i className="ti ti-calendar-event" /> Mapathon Publishing
-          </div>
-          <Button variant="primary" className="!text-[12px] !px-4 !py-2" onClick={() => setDateAddOpen(true)}>
-            <i className="ti ti-plus text-[12px] mr-1" />Add Date
-          </Button>
-        </div>
-        <div className="text-[12.5px] text-muted mb-[18px]">
-          Publish each mapathon's self-reported totals and attendance list here -- the Buildings Mapped / Roads Mapped cards above add these on top of member submissions.
-        </div>
-
-        {dates.length === 0 ? (
-          <div className="text-[12.5px] text-muted">No mapathon dates configured yet.</div>
-        ) : dates.map((d) => (
-          <div key={d.id} className="bg-card border border-border rounded-xl px-5 py-[14px] mb-[10px] last:mb-0 flex items-center justify-between gap-[14px] flex-wrap">
-            <div>
-              <div className="text-[14px] font-bold text-text mb-[2px]">{formatDate(d.event_date, '—')}{d.label ? ` — ${d.label}` : ''}</div>
-              <div className="text-[12px] text-muted">{d.hours} hour{d.hours === 1 ? '' : 's'} credited</div>
-              {(d.total_buildings_mapped > 0 || d.total_km_roads_mapped > 0 || d.bonus_service_hours > 0) ? (
-                <div className="text-[12px] text-muted mt-[3px]">
-                  {d.total_buildings_mapped} buildings · {d.total_km_roads_mapped} km roads · {d.bonus_service_hours} bonus hour{d.bonus_service_hours === 1 ? '' : 's'}
-                </div>
-              ) : null}
-              <div className="mt-[7px]">
-                {d.attendance_list_path ? (
-                  <span className="text-[10.5px] font-bold px-[10px] py-[3px] rounded-full uppercase tracking-[0.03em] bg-success-light text-success-dark">
-                    Attendance list attached
-                  </span>
-                ) : (
-                  <span className="text-[10.5px] font-bold px-[10px] py-[3px] rounded-full uppercase tracking-[0.03em] bg-bg text-muted border border-border">
-                    No attendance list
-                  </span>
-                )}
+          <Card>
+            <div className="flex items-center justify-between flex-wrap gap-[10px] mb-[6px]">
+              <div className="font-heading text-[16px] text-text tracking-[0.01em] flex items-center gap-[9px]">
+                <i className="ti ti-calendar-event" /> Mapathon Publishing
               </div>
+              <Button variant="primary" className="!text-[12px] !px-4 !py-2" onClick={() => setDateAddOpen(true)}>
+                <i className="ti ti-plus text-[12px] mr-1" />Add Date
+              </Button>
             </div>
-            <div className="flex items-center gap-[14px] shrink-0">
-              <button onClick={() => setDateEditItem(d)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
-              <button onClick={() => setDeleteDateItem(d)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Delete</button>
+            <div className="text-[12.5px] text-muted mb-[18px]">
+              Publish each mapathon's self-reported totals and attendance list here -- the Buildings Mapped / Roads Mapped cards above add these on top of member submissions.
             </div>
-          </div>
-        ))}
-      </Card>
+
+            {dates.length === 0 ? (
+              <div className="text-[12.5px] text-muted">No mapathon dates configured yet.</div>
+            ) : dates.map((d) => (
+              <div key={d.id} className="bg-card border border-border rounded-xl px-5 py-[14px] mb-[10px] last:mb-0 flex items-center justify-between gap-[14px] flex-wrap">
+                <div>
+                  <div className="text-[14px] font-bold text-text mb-[2px]">{formatDate(d.event_date, '—')}{d.label ? ` — ${d.label}` : ''}</div>
+                  <div className="text-[12px] text-muted">{d.hours} hour{d.hours === 1 ? '' : 's'} credited</div>
+                  {(d.total_buildings_mapped > 0 || d.total_km_roads_mapped > 0 || d.bonus_service_hours > 0) ? (
+                    <div className="text-[12px] text-muted mt-[3px]">
+                      {d.total_buildings_mapped} buildings · {d.total_km_roads_mapped} km roads · {d.bonus_service_hours} bonus hour{d.bonus_service_hours === 1 ? '' : 's'}
+                    </div>
+                  ) : null}
+                  <div className="mt-[7px]">
+                    {d.attendance_list_path ? (
+                      <span className="text-[10.5px] font-bold px-[10px] py-[3px] rounded-full uppercase tracking-[0.03em] bg-success-light text-success-dark">
+                        Attendance list attached
+                      </span>
+                    ) : (
+                      <span className="text-[10.5px] font-bold px-[10px] py-[3px] rounded-full uppercase tracking-[0.03em] bg-bg text-muted border border-border">
+                        No attendance list
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-[14px] shrink-0">
+                  <button onClick={() => setDateEditItem(d)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
+                  <button onClick={() => setDeleteDateItem(d)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Delete</button>
+                </div>
+              </div>
+            ))}
+          </Card>
+        </>
+      ) : (
+        <MentorImpactView />
+      )}
 
       <MapathonDateEditModal
         open={dateEditItem !== null}

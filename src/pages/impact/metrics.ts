@@ -24,6 +24,16 @@ const KNOWN_ICONS: Record<string, string> = {
   'Roads Mapped': '🛣',
   'Buildings Mapped': '🏢',
   'Mentorship Hours': '🧑‍🏫',
+  'office-sessions': '🗓',
+  'office-hours': '⏱',
+  'impact-sessions': '📋',
+  'impact-hours': '⏱',
+  'curriculum-submissions': '📚',
+  'curriculum-hours': '⏱',
+  resource: '🗂',
+  workshop: '🎞',
+  letter: '✉️',
+  infographic: '📊',
 };
 const FALLBACK_ICON = '📊';
 
@@ -34,7 +44,9 @@ export function iconFor(key: string): string {
 export function formatCompactNumber(n: number): string {
   if (n >= 1000000) { return (n / 1000000).toFixed(1) + 'M'; }
   if (n >= 1000) { return (n / 1000).toFixed(1) + 'k'; }
-  return String(Math.round(n));
+  // Hour totals carry decimals (e.g. 2.5 hrs) -- rounding them to a whole
+  // number would misreport small totals, so keep one decimal when there is one.
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
 }
 
 // These three don't exist anywhere in the current data (no "Funds Raised"

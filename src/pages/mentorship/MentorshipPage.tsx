@@ -12,7 +12,7 @@ import { AddMentorModal } from './AddMentorModal';
 import { MentorEditModal } from './MentorEditModal';
 
 export function MentorshipPage() {
-  const { mentors, sessionCount, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor, reloadMentors } = useMentors();
+  const { mentors, unlistedMentorProfiles, setMentorAvailability, updateMentor, uploadMentorAvatar, removeMentorAvatar, addMentor, reloadMentors } = useMentors();
   const { pending: pendingApplications, setApplicationStatus } = useMentorApplications();
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
@@ -33,11 +33,10 @@ export function MentorshipPage() {
     <>
       <Topbar title="Mentorship" />
 
-      <div className="grid grid-cols-4 max-portal:grid-cols-2 gap-[14px]">
+      <div className="grid grid-cols-3 max-portal:grid-cols-2 gap-[14px]">
         <StatCard label="Total Mentors" value={mentors.length} />
         <StatCard label="Available for Booking" value={availableCount} valueClassName="text-success" />
         <StatCard label="Unavailable" value={mentors.length - availableCount} valueClassName="text-muted" />
-        <StatCard label="Total Sessions" value={sessionCount ?? '—'} />
       </div>
 
       <Card>
