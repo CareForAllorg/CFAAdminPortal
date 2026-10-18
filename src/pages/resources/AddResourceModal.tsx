@@ -10,7 +10,7 @@ interface AddResourceModalProps {
   onCreate: (payload: Partial<Resource>) => Promise<boolean>;
 }
 
-const CATEGORIES: Resource['category'][] = ['Handbooks', 'Toolkits', 'Videos', 'Other', 'Chapter Lead'];
+const CATEGORIES: Resource['category'][] = ['Handbooks', 'Toolkits', 'Videos', 'Other', 'Chapter Lead', 'Mentor Guides'];
 const SOURCE_TYPES = ['Google Doc', 'Google Slides', 'External Link', 'Template', 'Video', 'Discord', 'Slack'];
 const AUDIENCES = ['All Members', 'Chapter Leads', 'Chapter Members', 'Independent Members', 'Mentors'];
 // Only meaningful on the role-specific onboarding-video rows in the
