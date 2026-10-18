@@ -48,7 +48,7 @@ export function ProofPhoto({ path, linkToFullSize = true, className }: { path: s
   );
 }
 
-async function viewProofPhoto(path: string) {
+export async function viewProofPhoto(path: string) {
   const result = await api.get<{ url: string }>(`/uploads/signed-url?filePath=${encodeURIComponent(path)}`);
   if (result.url) { window.open(result.url, '_blank', 'noopener,noreferrer'); }
 }
@@ -70,13 +70,13 @@ export function ProofLink({ path }: { path: string | null }) {
 // instead) -- fetching the actual bytes and saving via a local blob URL
 // works regardless of origin, which matters here since the point is
 // pulling photos out for social media, not just viewing them.
-export async function downloadProofPhoto(path: string) {
+export async function downloadProofPhoto(path: string, fileName?: string) {
   const { url } = await api.get<{ url: string }>(`/uploads/signed-url?filePath=${encodeURIComponent(path)}`);
   const blob = await fetch(url).then((res) => res.blob());
   const blobUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = blobUrl;
-  link.download = path.split('/').pop() || 'proof-photo';
+  link.download = fileName || path.split('/').pop() || 'proof-photo';
   document.body.appendChild(link);
   link.click();
   link.remove();
