@@ -8,7 +8,6 @@ import { useResources, type ResourceGroups } from './useResources';
 import { useResourceCategorySettings } from './useResourceCategorySettings';
 import { useMappingProjects, type MappingProject } from './useMappingProjects';
 import { ResourcePreviewModal } from './ResourcePreviewModal';
-import { MentorGuidesCard } from './MentorGuidesCard';
 import { ResourceEditModal } from './ResourceEditModal';
 import { AddResourceModal } from './AddResourceModal';
 import { MappingProjectEditModal } from './MappingProjectEditModal';
@@ -176,6 +175,7 @@ export function ResourcesPage() {
     { key: 'Videos', icon: 'video', title: 'Video Tutorials' },
     { key: 'Other', icon: 'dots', title: 'Other' },
     { key: 'Chapter Lead', icon: 'crown', title: 'Chapter Lead Resources' },
+    { key: 'Mentor Guides', icon: 'school', title: 'Mentor Guides' },
   ];
 
   return (
@@ -189,8 +189,6 @@ export function ResourcesPage() {
       <div className="text-[12.5px] text-muted -mt-[10px]">
         Manage the handbooks, toolkits, and videos members see in their portal.
       </div>
-
-      <MentorGuidesCard guides={groups['Mentor Guides']} onCreate={createResource} onUpdate={updateResource} />
 
       <Card>
         {sections.map((s) => (
