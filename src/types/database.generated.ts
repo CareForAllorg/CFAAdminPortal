@@ -387,7 +387,7 @@ export interface Database {
       resources: {
         Row: {
           id: string;
-          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead' | 'Mentor Guides';
           title: string;
           description: string | null;
           link: string | null;
@@ -402,7 +402,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead' | 'Mentor Guides';
           title: string;
           description?: string | null;
           link?: string | null;
@@ -417,7 +417,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          category?: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead';
+          category?: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other' | 'Chapter Lead' | 'Mentor Guides';
           title?: string;
           description?: string | null;
           link?: string | null;
