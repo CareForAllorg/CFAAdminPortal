@@ -21,7 +21,7 @@ interface FormRecord {
   target_user_ids: string[];
 }
 
-interface PersonHit { id: string; first_name: string | null; last_name: string | null; role: string }
+interface PersonHit { id: string; first_name: string | null; last_name: string | null; role: string; email?: string | null }
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   short_text: 'Short answer',
@@ -198,7 +198,7 @@ export function FeedbackFormDesigner({ formId, onClose, onSaved }: { formId: str
                 </label>
               ))}
             </div>
-            <input className={inputClass} placeholder="Search members by name to add individuals…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className={inputClass} placeholder="Search members by email or name to add individuals…" value={search} onChange={(e) => setSearch(e.target.value)} />
             {hits.length > 0 ? (
               <div className="border border-border rounded-lg mt-1 max-h-[160px] overflow-y-auto">
                 {hits.map((h) => (
@@ -208,7 +208,7 @@ export function FeedbackFormDesigner({ formId, onClose, onSaved }: { formId: str
                     className="w-full text-left px-3 py-2 text-[12.5px] hover:bg-bg flex justify-between"
                     onClick={() => { setPeople((p) => [...p, h]); setSearch(''); setHits([]); }}
                   >
-                    <span>{personName(h)}</span><span className="text-muted">{h.role}</span>
+                    <span>{personName(h)}{h.email ? <span className="text-muted"> · {h.email}</span> : null}</span><span className="text-muted">{h.role}</span>
                   </button>
                 ))}
               </div>

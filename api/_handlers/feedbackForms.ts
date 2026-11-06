@@ -213,15 +213,41 @@ async function recipientSearch(req: VercelRequest, res: VercelResponse, ctx: Req
   if (q.length < 2) { sendJson(res, 200, { data: [] }); return; }
 
   const supabase = db(ctx);
-  // Every word must match the first or last name, so "Jane Smith" works.
-  let query = supabase.from('profiles').select('id, first_name, last_name, role');
+  // Match by email (lives on public.users) or by name (every word must match
+  // the first or last name, so "Jane Smith" works).
+  const emailSafe = q.replace(/[%,()*]/g, '');
+  const { data: emailRows, error: emailError } = await supabase
+    .from('users')
+    .select('id')
+    .ilike('email', `%${emailSafe}%`)
+    .limit(15);
+  if (emailError) { throw emailError; }
+  const emailIds = (emailRows ?? []).map((u) => u.id as string);
+
+  let nameQuery = supabase.from('profiles').select('id, first_name, last_name, role');
   for (const token of q.split(/\s+/)) {
     const safe = token.replace(/[%,()*]/g, '');
-    if (safe) { query = query.or(`first_name.ilike.*${safe}*,last_name.ilike.*${safe}*`); }
+    if (safe) { nameQuery = nameQuery.or(`first_name.ilike.*${safe}*,last_name.ilike.*${safe}*`); }
   }
-  const { data, error } = await query.limit(15);
+  const [{ data: byName, error }, { data: byEmail, error: byEmailError }] = await Promise.all([
+    nameQuery.limit(15),
+    emailIds.length
+      ? supabase.from('profiles').select('id, first_name, last_name, role').in('id', emailIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
   if (error) { throw error; }
-  sendJson(res, 200, { data: data ?? [] });
+  if (byEmailError) { throw byEmailError; }
+
+  const merged = new Map<string, { id: string; first_name: string | null; last_name: string | null; role: string }>();
+  for (const row of [...(byEmail ?? []), ...(byName ?? [])]) { merged.set(row.id, row); }
+  const rows = [...merged.values()].slice(0, 15);
+
+  const { data: emails } = rows.length
+    ? await supabase.from('users').select('id, email').in('id', rows.map((r) => r.id))
+    : { data: [] };
+  const emailById = new Map((emails ?? []).map((u) => [u.id as string, u.email as string | null]));
+  const data = rows.map((r) => ({ ...r, email: emailById.get(r.id) ?? null }));
+  sendJson(res, 200, { data });
 }
 
 // One-shot release: resolves the recipient list, stores it, flips the form
