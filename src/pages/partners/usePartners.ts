@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 
 export interface Partner {
@@ -39,8 +40,16 @@ export function usePartners() {
   useEffect(() => { load(); }, [load]);
 
   async function createPartner(payload: PartnerPayload) {
-    const ok = await mutateOrToast(api.post('/partners', payload), 'Adding partner');
-    if (ok) { await load(); }
+    const outcome: { invited?: boolean; inviteError?: string | null } = {};
+    const ok = await mutateOrToast(
+      api.post<{ invited: boolean; inviteError: string | null }>('/partners', payload).then((r) => { Object.assign(outcome, r); }),
+      'Adding partner',
+    );
+    if (ok) {
+      if (outcome.invited) { toast.success(`Invitation emailed to ${payload.contact_email}`); }
+      else if (outcome.inviteError) { toast.error('Partner saved, but the invitation email failed', { description: outcome.inviteError }); }
+      await load();
+    }
     return ok;
   }
 

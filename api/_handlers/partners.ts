@@ -5,9 +5,33 @@ import type { Database } from '../../src/types/database.generated.js';
 
 const PARTNER_COLUMNS = 'id, name, website, contact_name, contact_first_name, contact_last_name, contact_email, notes, created_at';
 
+const VOLUNTEER_PORTAL_URL = process.env.VOLUNTEER_PORTAL_URL ?? 'https://volunteer.careforall.org';
+
 type PartnerUpdate = Database['public']['Tables']['partners']['Update'];
 
 const PATCHABLE_FIELDS = ['name', 'website', 'contact_first_name', 'contact_last_name', 'contact_email', 'notes'] as const satisfies readonly (keyof PartnerUpdate)[];
+
+// Asks the volunteer portal (which owns the Resend setup) to email the
+// partner contact an invite to the Program Partner signup. Authenticated
+// with the shared PARTNER_INVITE_SECRET (same value in both Vercel
+// projects). Failure is reported, never thrown -- the partner row is
+// already saved by the time this runs.
+async function sendPartnerInvite(email: string, firstName: string | null, orgName: string): Promise<string | null> {
+  const secret = process.env.PARTNER_INVITE_SECRET;
+  if (!secret) { return 'PARTNER_INVITE_SECRET is not set in the admin portal'; }
+  try {
+    const res = await fetch(`${VOLUNTEER_PORTAL_URL}/api/partners/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-partner-invite-secret': secret },
+      body: JSON.stringify({ email, firstName: firstName ?? undefined, orgName }),
+    });
+    if (!res.ok) { return `Volunteer portal responded ${res.status}`; }
+    return null;
+  } catch (err) {
+    console.error('[partners] invite failed:', err);
+    return err instanceof Error ? err.message : 'Could not reach the volunteer portal';
+  }
+}
 
 // A member self-signing up as a "Program Partner" creates a real chapter
 // instead (see VolunteerPortalCFA's app/onboarding/actions.ts) -- a
@@ -44,7 +68,14 @@ export async function partners(req: VercelRequest, res: VercelResponse, ctx: Req
       .select(PARTNER_COLUMNS)
       .single();
     if (error) { throw error; }
-    sendJson(res, 201, { data });
+
+    // Adding an organization with a contact email is what invites that
+    // contact to create their partnership account.
+    let inviteError: string | null = null;
+    if (data.contact_email) {
+      inviteError = await sendPartnerInvite(data.contact_email, data.contact_first_name, data.name);
+    }
+    sendJson(res, 201, { data, invited: !!data.contact_email && !inviteError, inviteError });
     return;
   }
 
