@@ -23,6 +23,7 @@ export async function formSubmissions(req: VercelRequest, res: VercelResponse, c
     case 'members': return members(res, ctx);
     case 'chapter-lead-signups': return chapterLeadSignups(res, ctx);
     case 'chapter-applications': return chapterApplications(res, ctx);
+    case 'chapter-renewals': return chapterRenewals(res, ctx);
     case 'project-submissions': return projectSubmissions(res, ctx);
     case 'mapping-mapathon-logs': return mappingMapathonLogs(res, ctx);
     case 'service-hour-verifications': return serviceHourVerifications(res, ctx);
@@ -112,6 +113,35 @@ async function chapterApplications(res: VercelResponse, ctx: RequestContext) {
     { key: 'state', label: 'State' }, { key: 'country', label: 'Country' },
     { key: 'cofounder', label: 'Co-Founder' }, { key: 'additional_member', label: 'Additional Member' },
     { key: 'advisor', label: 'Advisor' }, { key: 'applied_at', label: 'Applied' },
+  ];
+  sendJson(res, 200, { data: rows, columns, total: rows.length });
+}
+
+// "Annual Chapter Renewal Form" -- filed by chapter leads from Chapter Hub's
+// Annual Active Status Checklist, due June 1 each year. Record-only: the
+// volunteer portal does not change the chapter from these answers.
+async function chapterRenewals(res: VercelResponse, ctx: RequestContext) {
+  const { data, error } = await ctx.supabase
+    .from('chapter_renewals')
+    .select('id, cycle_year, lead1_name, lead1_email, lead2_name, lead2_email, advisor_name, advisor_email, chapter_type, other_changes, submitted_at, updated_at, chapters(name)')
+    .order('submitted_at', { ascending: false });
+  if (error) { throw error; }
+
+  // Embedded relations come back typed as an array or object depending on
+  // the FK direction, so read the name defensively.
+  const rows = ((data ?? []) as unknown as Array<Record<string, unknown> & { chapters?: { name?: string } | { name?: string }[] | null }>).map((r) => {
+    const { chapters, ...rest } = r;
+    const chapter = Array.isArray(chapters) ? chapters[0] : chapters;
+    return { ...rest, chapter_name: chapter?.name ?? null };
+  });
+
+  const columns: FormColumn[] = [
+    { key: 'chapter_name', label: 'Chapter' }, { key: 'cycle_year', label: 'Renewal Year (June 1)' },
+    { key: 'lead1_name', label: 'Chapter Lead 1' }, { key: 'lead1_email', label: 'Lead 1 Email' },
+    { key: 'lead2_name', label: 'Chapter Lead 2' }, { key: 'lead2_email', label: 'Lead 2 Email' },
+    { key: 'advisor_name', label: 'Advisor' }, { key: 'advisor_email', label: 'Advisor Email' },
+    { key: 'chapter_type', label: 'Chapter Type' }, { key: 'other_changes', label: 'Other Changes' },
+    { key: 'submitted_at', label: 'Submitted' }, { key: 'updated_at', label: 'Last Updated' },
   ];
   sendJson(res, 200, { data: rows, columns, total: rows.length });
 }

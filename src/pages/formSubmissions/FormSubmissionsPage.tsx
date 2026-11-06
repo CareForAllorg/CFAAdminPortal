@@ -42,6 +42,12 @@ const FORMS: FormDef[] = [
     openPath: '/portal/chapter-hub',
   },
   {
+    formType: 'chapter-renewals',
+    title: 'Annual Chapter Renewal Form',
+    description: 'Filed by chapter leads from Chapter Hub each year before June 1 -- leads, advisor, chapter type and any other changes.',
+    openPath: '/portal/chapter-hub',
+  },
+  {
     formType: 'project-submissions',
     title: 'Project Time Log',
     description: 'Project Hub submissions -- start-a-project wizard entries and wrap-up activity summaries.',
