@@ -22,7 +22,12 @@ async function sendPartnerInvite(email: string, firstName: string | null, orgNam
   try {
     const res = await fetch(`${VOLUNTEER_PORTAL_URL}/api/partners/invite`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-partner-invite-secret': secret },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-partner-invite-secret': secret,
+        // Lets server-to-server calls through Vercel Authentication on preview deployments.
+        ...(process.env.VOLUNTEER_PORTAL_BYPASS ? { 'x-vercel-protection-bypass': process.env.VOLUNTEER_PORTAL_BYPASS } : {}),
+      },
       body: JSON.stringify({ email, firstName: firstName ?? undefined, orgName }),
     });
     if (!res.ok) { return `Volunteer portal responded ${res.status}`; }

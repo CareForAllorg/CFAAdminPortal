@@ -291,7 +291,12 @@ async function sendNotifications(supabase: ReturnType<typeof db>, id: string, ti
     if (!secret) { throw new Error('PARTNER_INVITE_SECRET is not set'); }
     const notifyRes = await fetch(`${VOLUNTEER_PORTAL_URL}/api/feedback-forms/notify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-partner-invite-secret': secret },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-partner-invite-secret': secret,
+        // Lets server-to-server calls through Vercel Authentication on preview deployments.
+        ...(process.env.VOLUNTEER_PORTAL_BYPASS ? { 'x-vercel-protection-bypass': process.env.VOLUNTEER_PORTAL_BYPASS } : {}),
+      },
       body: JSON.stringify({
         formId: id,
         title,
