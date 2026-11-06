@@ -12,6 +12,8 @@ interface FormResponseData {
 interface FormResponseModalProps {
   formType: string | null;
   title: string;
+  // Defaults to /form-submissions/<formType>; feedback forms point at their own endpoint.
+  path?: string;
   onClose: () => void;
 }
 
@@ -26,7 +28,7 @@ function cellText(value: unknown): string {
 // renderer covers all of them since each backend branch in
 // api/_handlers/formSubmissions.ts already normalizes its rows down to
 // the same { data, columns } shape.
-export function FormResponseModal({ formType, title, onClose }: FormResponseModalProps) {
+export function FormResponseModal({ formType, title, path, onClose }: FormResponseModalProps) {
   const [result, setResult] = useState<FormResponseData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,7 @@ export function FormResponseModal({ formType, title, onClose }: FormResponseModa
     setLoading(true);
 
     (async () => {
-      const res = await apiOrToast(api.get<FormResponseData>(`/form-submissions/${formType}`), 'Loading responses', null);
+      const res = await apiOrToast(api.get<FormResponseData>(path ?? `/form-submissions/${formType}`), 'Loading responses', null);
       if (!cancelled) {
         setResult(res);
         setLoading(false);
@@ -45,7 +47,7 @@ export function FormResponseModal({ formType, title, onClose }: FormResponseModa
     })();
 
     return () => { cancelled = true; };
-  }, [formType]);
+  }, [formType, path]);
 
   if (!formType) { return null; }
 

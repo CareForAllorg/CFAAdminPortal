@@ -20,6 +20,7 @@ import { mapathonReports } from './_handlers/mapathonReports.js';
 import { uploadsSignedUrl, uploadMentorAvatar, uploadMapathonAttendance } from './_handlers/uploads.js';
 import { partners } from './_handlers/partners.js';
 import { formSubmissions } from './_handlers/formSubmissions.js';
+import { feedbackForms } from './_handlers/feedbackForms.js';
 import { mapathonDates } from './_handlers/mapathonDates.js';
 import { mentorApplications, mentorApplicationsWebhook } from './_handlers/mentorApplications.js';
 
@@ -81,6 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'mapathon-reports': return await mapathonReports(req, res, ctx);
       case 'partners': return await partners(req, res, ctx, sub);
       case 'form-submissions': return await formSubmissions(req, res, ctx, sub);
+      case 'feedback-forms': return await feedbackForms(req, res, ctx, sub);
       case 'mapathon-dates': return await mapathonDates(req, res, ctx, sub);
       case 'mentor-applications': return await mentorApplications(req, res, ctx, sub);
       case 'uploads':

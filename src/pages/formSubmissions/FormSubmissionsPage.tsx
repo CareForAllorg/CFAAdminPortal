@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 import { api, apiOrToast } from '../../lib/apiClient';
 import { downloadCsv, type CsvColumn } from '../../utils/csv';
 import { FormResponseModal } from './FormResponseModal';
+import { FeedbackFormsSection } from './FeedbackFormsSection';
 
 const VOLUNTEER_PORTAL_BASE = 'https://volunteer.careforall.org';
 
@@ -134,6 +135,8 @@ export function FormSubmissionsPage() {
           </div>
         </div>
       </Card>
+
+      <FeedbackFormsSection />
 
       <FormResponseModal formType={viewing?.formType ?? null} title={viewing?.title ?? ''} onClose={() => setViewing(null)} />
     </>
