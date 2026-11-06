@@ -213,12 +213,13 @@ async function recipientSearch(req: VercelRequest, res: VercelResponse, ctx: Req
   if (q.length < 2) { sendJson(res, 200, { data: [] }); return; }
 
   const supabase = db(ctx);
-  const safe = q.replace(/[%,()]/g, ' ');
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, role')
-    .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%`)
-    .limit(15);
+  // Every word must match the first or last name, so "Jane Smith" works.
+  let query = supabase.from('profiles').select('id, first_name, last_name, role');
+  for (const token of q.split(/\s+/)) {
+    const safe = token.replace(/[%,()*]/g, '');
+    if (safe) { query = query.or(`first_name.ilike.*${safe}*,last_name.ilike.*${safe}*`); }
+  }
+  const { data, error } = await query.limit(15);
   if (error) { throw error; }
   sendJson(res, 200, { data: data ?? [] });
 }
