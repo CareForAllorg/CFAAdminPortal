@@ -71,6 +71,22 @@ export function FeedbackFormsSection() {
     void load();
   }
 
+  async function handleResend(form: FeedbackFormRow) {
+    if (!window.confirm(`Re-send the email for "${form.title}" to everyone who hasn't responded yet?`)) { return; }
+    setBusyId(form.id);
+    const res = await apiOrToast(
+      api.post<{ recipientCount: number; emailed: number; emailError: string | null }>(`/feedback-forms/${form.id}/resend`),
+      'Resending emails',
+      null,
+    );
+    setBusyId(null);
+    if (res) {
+      if (res.emailError) { toast.error(`Emails failed: ${res.emailError}`); }
+      else { toast.success(`Re-sent to ${res.emailed} people who haven't responded`); }
+    }
+    void load();
+  }
+
   return (
     <>
       <Card>
@@ -111,6 +127,7 @@ export function FeedbackFormsSection() {
                   </>
                 ) : (
                   <>
+                    <Button variant="outline" className="!text-[12px] !px-3 !py-[7px]" disabled={busyId === form.id} onClick={() => handleResend(form)}>Resend Email</Button>
                     <Button variant="outline" className="!text-[12px] !px-3 !py-[7px]" onClick={() => setViewing(form)}>View Responses</Button>
                     <Button variant="outline" className="!text-[12px] !px-3 !py-[7px]" disabled={busyId === form.id} onClick={() => handleDownload(form)}>
                       <i className="ti ti-download text-[13px] mr-1" />Download CSV

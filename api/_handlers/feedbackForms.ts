@@ -112,6 +112,7 @@ export async function feedbackForms(req: VercelRequest, res: VercelResponse, ctx
 
   if (sub === 'recipient-search') { return recipientSearch(req, res, ctx); }
   if (sub && action === 'release') { return release(req, res, ctx, sub); }
+  if (sub && action === 'resend') { return resend(req, res, ctx, sub); }
   if (sub && action === 'responses') { return responses(req, res, ctx, sub); }
   if (sub) { return byId(req, res, ctx, sub); }
 
@@ -275,6 +276,13 @@ async function release(req: VercelRequest, res: VercelResponse, ctx: RequestCont
     .eq('id', id);
   if (releaseError) { throw releaseError; }
 
+  const { emailed, emailError } = await sendNotifications(supabase, id, form.title, recipients);
+
+  sendJson(res, 200, { recipientCount: recipients.length, emailed, emailError });
+}
+
+// Asks the volunteer portal to email the given recipients and stamps notified_at.
+async function sendNotifications(supabase: ReturnType<typeof db>, id: string, title: string, recipients: Recipient[]) {
   let emailed = 0;
   let emailError: string | null = null;
   const withEmail = recipients.filter((r) => r.email);
@@ -286,11 +294,11 @@ async function release(req: VercelRequest, res: VercelResponse, ctx: RequestCont
       headers: { 'Content-Type': 'application/json', 'x-partner-invite-secret': secret },
       body: JSON.stringify({
         formId: id,
-        title: form.title,
+        title,
         recipients: withEmail.map((r) => ({ email: r.email, firstName: r.firstName })),
       }),
     });
-    if (!notifyRes.ok) { throw new Error(`Volunteer portal responded ${notifyRes.status}`); }
+    if (!notifyRes.ok) { throw new Error(`Volunteer portal at ${VOLUNTEER_PORTAL_URL} responded ${notifyRes.status}`); }
     emailed = withEmail.length;
     await supabase
       .from('feedback_form_recipients')
@@ -301,8 +309,30 @@ async function release(req: VercelRequest, res: VercelResponse, ctx: RequestCont
     emailError = err instanceof Error ? err.message : 'Failed to send notification emails';
     console.error('[feedback-forms] notify failed:', err);
   }
+  return { emailed, emailError };
+}
 
-  sendJson(res, 200, { recipientCount: recipients.length, emailed, emailError });
+// Re-sends the email to released-form recipients who haven't responded yet.
+async function resend(req: VercelRequest, res: VercelResponse, ctx: RequestContext, id: string) {
+  if (req.method !== 'POST') { methodNotAllowed(res, ['POST']); return; }
+  const supabase = db(ctx);
+
+  const { data: form, error } = await supabase.from('feedback_forms').select('*').eq('id', id).single();
+  if (error) { throw error; }
+  if (form.status !== 'released') { badRequest(res, 'Release the form before resending'); return; }
+
+  const [stored, answered, resolved] = await Promise.all([
+    fetchAll<{ user_id: string }>((a, b) => supabase.from('feedback_form_recipients').select('user_id').eq('form_id', id).range(a, b)),
+    fetchAll<{ user_id: string }>((a, b) => supabase.from('feedback_form_responses').select('user_id').eq('form_id', id).range(a, b)),
+    resolveRecipients(ctx, form.target_roles ?? [], form.target_user_ids ?? []),
+  ]);
+  const storedIds = new Set(stored.map((r) => r.user_id));
+  const answeredIds = new Set(answered.map((r) => r.user_id));
+  const pending = resolved.filter((r) => storedIds.has(r.id) && !answeredIds.has(r.id));
+  if (pending.length === 0) { badRequest(res, 'Everyone has already responded'); return; }
+
+  const { emailed, emailError } = await sendNotifications(supabase, id, form.title, pending);
+  sendJson(res, 200, { recipientCount: pending.length, emailed, emailError });
 }
 
 async function responses(req: VercelRequest, res: VercelResponse, ctx: RequestContext, id: string) {
