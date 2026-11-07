@@ -10,7 +10,7 @@ import { PartnerEditModal } from './PartnerEditModal';
 import { useChapterApplications } from '../chapters/useChapterApplications';
 
 export function PartnersPage() {
-  const { partners, createPartner, updatePartner, deletePartner } = usePartners();
+  const { partners, createPartner, updatePartner, deletePartner, sendInvite } = usePartners();
   // Program partners created through the Volunteer Portal's Partner With
   // Us flow are real chapters rows under the hood (see
   // app/onboarding/actions.ts), tagged meta.is_partner -- reusing the same
@@ -109,7 +109,10 @@ export function PartnersPage() {
               ) : '-'}
             </div>
             <div className="text-[11.5px] text-muted">{formatDate(p.created_at)}</div>
-            <div className="flex items-center gap-[13px]">
+            <div className="flex items-center flex-wrap gap-x-[13px] gap-y-1">
+              {p.contact_email ? (
+                <button onClick={() => sendInvite(p)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Send Invite</button>
+              ) : null}
               <button onClick={() => setEditItem(p)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
               <button onClick={() => setDeleteItem(p)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Delete</button>
             </div>

@@ -59,11 +59,22 @@ export function usePartners() {
     return ok;
   }
 
+  async function sendInvite(partner: Partner) {
+    const res = await apiOrToast(
+      api.post<{ invited: boolean; inviteError: string | null; email: string }>(`/partners/${partner.id}/invite`),
+      'Sending invitation',
+      null,
+    );
+    if (!res) { return; }
+    if (res.invited) { toast.success(`Invitation emailed to ${res.email}`); }
+    else { toast.error('The invitation email failed', { description: res.inviteError ?? undefined }); }
+  }
+
   async function deletePartner(id: string) {
     const ok = await mutateOrToast(api.delete(`/partners/${id}`), 'Deleting partner');
     if (ok) { await load(); }
     return ok;
   }
 
-  return { partners, loading, createPartner, updatePartner, deletePartner, reload: load };
+  return { partners, loading, createPartner, updatePartner, deletePartner, sendInvite, reload: load };
 }

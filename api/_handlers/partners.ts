@@ -45,6 +45,9 @@ async function sendPartnerInvite(email: string, firstName: string | null, orgNam
 // partner organizations by hand -- pure admin CRUD, no member-facing
 // counterpart.
 export async function partners(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
+  const rawPath = req.query.path;
+  const action = (Array.isArray(rawPath) ? rawPath.join('/') : rawPath ?? '').split('/').filter(Boolean)[2];
+  if (sub && action === 'invite') { return resendInvite(req, res, ctx, sub); }
   if (sub) { return byId(req, res, ctx, sub); }
 
   const { supabase } = ctx;
@@ -85,6 +88,17 @@ export async function partners(req: VercelRequest, res: VercelResponse, ctx: Req
   }
 
   methodNotAllowed(res, ['GET', 'POST']);
+}
+
+// Manual (re)send of the partnership invite to an existing partner's contact.
+async function resendInvite(req: VercelRequest, res: VercelResponse, ctx: RequestContext, id: string) {
+  if (req.method !== 'POST') { methodNotAllowed(res, ['POST']); return; }
+  const { data, error } = await ctx.supabase.from('partners').select(PARTNER_COLUMNS).eq('id', id).single();
+  if (error) { throw error; }
+  if (!data.contact_email) { badRequest(res, 'This partner has no contact email. Edit the partner and add one first.'); return; }
+
+  const inviteError = await sendPartnerInvite(data.contact_email, data.contact_first_name, data.name);
+  sendJson(res, 200, { invited: !inviteError, inviteError, email: data.contact_email });
 }
 
 async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext, id: string) {
