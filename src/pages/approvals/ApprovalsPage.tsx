@@ -5,10 +5,11 @@ import { Tabs } from '../../components/Tabs';
 import { useApprovalStats } from './useApprovalStats';
 import { ProjectSubmissionsTab } from './ProjectSubmissionsTab';
 import { MappingSubmissionsTab } from './MappingSubmissionsTab';
+import { MentorshipSubmissionsTab } from './MentorshipSubmissionsTab';
 import { VerificationTab } from './VerificationTab';
 import { ProjectPhotosTab } from './ProjectPhotosTab';
 
-type ApprovalTab = 'projects' | 'mapping' | 'verification' | 'photos';
+type ApprovalTab = 'projects' | 'mapping' | 'mentorship' | 'verification' | 'photos';
 
 export function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<ApprovalTab>('projects');
@@ -35,6 +36,7 @@ export function ApprovalsPage() {
         tabs={[
           { id: 'projects', label: 'Project & Impact Hour Submissions' },
           { id: 'mapping', label: 'Mapping & Mapathon Submissions' },
+          { id: 'mentorship', label: 'Mentorship' },
           { id: 'verification', label: 'Service Hour Verification' },
           { id: 'photos', label: 'Project Photos' },
         ]}
@@ -44,6 +46,7 @@ export function ApprovalsPage() {
 
       {activeTab === 'projects' ? <ProjectSubmissionsTab onMutated={bumpStats} /> : null}
       {activeTab === 'mapping' ? <MappingSubmissionsTab onMutated={bumpStats} /> : null}
+      {activeTab === 'mentorship' ? <MentorshipSubmissionsTab onMutated={bumpStats} /> : null}
       {activeTab === 'verification' ? <VerificationTab onMutated={bumpStats} /> : null}
       {activeTab === 'photos' ? <ProjectPhotosTab /> : null}
     </>
