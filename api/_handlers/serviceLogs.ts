@@ -172,13 +172,29 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
     // requirement. mapping_hours is kept out of the normal additive
     // service_logs.hours sum everywhere Total Hours is computed (see those
     // call sites) specifically so a resubmitted total doesn't inflate it.
+    //
+    // The totals come from the member's most recently SUBMITTED approved
+    // mapping entry, not from whichever entry happens to be approved last.
+    // Otherwise approving a batch of entries at once (or approving an old
+    // one late) leaves the stale entry's totals on the profile.
     if (updates.status === 'approved' && data.user_id && canonicalImpactCategory(data.primary_impact) === 'Buildings Mapped') {
+      const { data: approvedLogs, error: approvedError } = await supabase
+        .from('service_logs')
+        .select('id, submitted_at, hours, impact_magnitude, secondary_impact_magnitude, primary_impact')
+        .eq('user_id', data.user_id)
+        .eq('status', 'approved');
+      if (approvedError) { throw approvedError; }
+
+      const latest = (approvedLogs ?? [])
+        .filter((l) => canonicalImpactCategory(l.primary_impact) === 'Buildings Mapped')
+        .sort((a, b) => (a.submitted_at < b.submitted_at ? 1 : a.submitted_at > b.submitted_at ? -1 : (a.id < b.id ? 1 : -1)))[0] ?? data;
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          buildings_mapped: data.impact_magnitude ?? 0,
-          km_roads_mapped: data.secondary_impact_magnitude ?? 0,
-          mapping_hours: data.hours ?? 0,
+          buildings_mapped: latest.impact_magnitude ?? 0,
+          km_roads_mapped: latest.secondary_impact_magnitude ?? 0,
+          mapping_hours: latest.hours ?? 0,
         })
         .eq('id', data.user_id);
       if (profileError) { throw profileError; }
